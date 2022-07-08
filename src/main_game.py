@@ -1,19 +1,20 @@
 from packages.utils.colors import RGB_Color, BEIGE, BROWN
-from packages.board.board_setup import BoardSetup
+from packages.board import Board
 
 import sys
 import pygame
 
+pygame.init()
+
 
 def main() -> None:
-    pygame.init()
-    board: BoardSetup = BoardSetup(60, 8, 8, BROWN, BEIGE)
-    board.draw()
-
     game_run: bool = True
+    board: Board = Board(60, 8, 8, BROWN, BEIGE)
     clock: pygame.time.Clock = pygame.time.Clock()
 
     while game_run:
+
+        board.draw()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_run = False

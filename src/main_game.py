@@ -1,4 +1,4 @@
-from packages.utils.colors import RGB_Color, BEIGE, BROWN
+from packages.utils.colors import RGB_Color, BEIGE, BROWN, LIGHT_GREEN, BLACK
 from packages.board import Board
 
 import sys
@@ -9,7 +9,7 @@ pygame.init()
 
 def main() -> None:
     game_run: bool = True
-    board: Board = Board(60, 8, 8, BROWN, BEIGE)
+    board: Board = Board(120, 8, 8, BROWN, BEIGE, LIGHT_GREEN, BLACK)
     clock: pygame.time.Clock = pygame.time.Clock()
 
     while game_run:
@@ -20,8 +20,12 @@ def main() -> None:
                 game_run = False
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                board.update_board_state(pygame.mouse.get_pos())
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_z:
+                    board.undo_move()
 
-        pygame.display.update()
         clock.tick(60)
 
 

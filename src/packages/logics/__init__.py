@@ -49,10 +49,10 @@ def get_pawn_moves(
         except IndexError:
             return moves
 
-        if p_row - 1 in range(len(board_state)):
-            if p_col - 1 in range(len(board_state[p_row - 1])):
+        if p_row - 1 in range(8):
+            if p_col - 1 in range(8):
 
-                if board_state[p_row - 1][p_col - 1].startswith("b"):
+                if board_state[p_row - 1][p_col - 1][0] == "b":
                     moves.append(
                         Move(
                             selected_pos,
@@ -62,9 +62,9 @@ def get_pawn_moves(
                         )
                     )
 
-        if p_row - 1 in range(len(board_state)):
-            if p_col + 1 in range(len(board_state[p_row - 1])):
-                if board_state[p_row - 1][p_col + 1].startswith("b"):
+        if p_row - 1 in range(8):
+            if p_col + 1 in range(8):
+                if board_state[p_row - 1][p_col + 1][0] == "b":
                     moves.append(
                         Move(
                             selected_pos,
@@ -93,10 +93,10 @@ def get_pawn_moves(
         except IndexError:
             return moves
 
-        if p_row + 1 in range(len(board_state)):
-            if p_col - 1 in range(len(board_state[p_row + 1])):
+        if p_row + 1 in range(8):
+            if p_col - 1 in range(8):
 
-                if board_state[p_row + 1][p_col - 1].startswith("w"):
+                if board_state[p_row + 1][p_col - 1][0] == "w":
                     moves.append(
                         Move(
                             selected_pos,
@@ -106,9 +106,9 @@ def get_pawn_moves(
                         )
                     )
 
-        if p_row + 1 in range(len(board_state)):
-            if p_col + 1 in range(len(board_state[p_row + 1])):
-                if board_state[p_row + 1][p_col + 1].startswith("b"):
+        if p_row + 1 in range(8):
+            if p_col + 1 in range(8):
+                if board_state[p_row + 1][p_col + 1][0] == "w":
                     moves.append(
                         Move(
                             selected_pos,

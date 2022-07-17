@@ -11,7 +11,13 @@ class Move:
     ) -> None:
         self.start_pos: tuple[int, int] = start_pos
         self.end_pos: tuple[int, int] = end_pos
-        self.turn_to_move = turn_to_move
+        self.turn_to_move: str = turn_to_move
+
+        self.is_pawn_promotion: bool = False
+        self.is_en_passant: bool = False
+        self.is_castling: bool = False
+
+        self.promoted_piece: str | None = None
 
         if self.start_pos is not None:
             self.moved_piece: str = board_state[self.start_pos[0]][self.start_pos[1]]
@@ -23,6 +29,16 @@ class Move:
         else:
             self.captured_piece = None
 
+        if self.moved_piece == "wP" and self.end_pos[0] == 0:
+            self.is_pawn_promotion = True
+
+        if self.moved_piece == "bP" and self.end_pos[0] == 7:
+            self.is_pawn_promotion = True
+
+    def set_promoted_piece(self, piece: str) -> None:
+        if self.is_pawn_promotion:
+            self.promoted_piece = piece
+
     def __eq__(self, other: Move) -> bool:
         if (
             (self.start_pos == other.start_pos)
@@ -30,6 +46,9 @@ class Move:
             and (self.captured_piece == other.captured_piece)
             and (self.moved_piece == other.moved_piece)
             and (self.turn_to_move == other.turn_to_move)
+            and (self.is_pawn_promotion == other.is_pawn_promotion)
+            and (self.is_castling == other.is_castling)
+            and (self.is_en_passant == other.is_en_passant)
         ):
             return True
 

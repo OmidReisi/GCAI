@@ -1,4 +1,11 @@
-from packages.utils.colors import RGB_Color, BEIGE, BROWN, LIGHT_GREEN, BLACK
+from packages.utils.colors import (
+    RGB_Color,
+    BEIGE,
+    BROWN,
+    LIGHT_GREEN,
+    BLACK,
+    LIGHT_GREY,
+)
 from packages.board import Board
 
 import sys
@@ -9,7 +16,7 @@ pygame.init()
 
 def main() -> None:
     game_run: bool = True
-    board: Board = Board(120, 8, 8, BROWN, BEIGE, LIGHT_GREEN, BLACK)
+    board: Board = Board(120, 8, 8, BROWN, BEIGE, LIGHT_GREEN, BLACK, LIGHT_GREY)
     clock: pygame.time.Clock = pygame.time.Clock()
 
     while game_run:

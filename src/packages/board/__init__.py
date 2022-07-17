@@ -1,6 +1,7 @@
+from pygame.constants import MOUSEBUTTONDOWN
 from ..utils.colors import RGB_Color
 from ..move import Move
-from ..logics import get_possible_moves
+from ..logics import get_possible_moves, possition_under_attack, any_valid_moves
 
 from typing import Literal
 
@@ -19,6 +20,7 @@ class Board:
         light_color: RGB_Color,
         highlight_color: RGB_Color,
         font_color: RGB_Color,
+        background_color: RGB_Color,
     ) -> None:
         """Initializing a board with the given number of rows and cols and the defined cell_size and setting the initial_state of the board.
 
@@ -42,6 +44,8 @@ class Board:
             r"../res/fonts/ChessMeridaUnicode.ttf", 30
         )
         self.font_color: RGB_Color = font_color
+        self.background_color: RGB_Color = background_color
+
         self.screen: pygame.surface.Surface = pygame.display.set_mode(
             (self.rows * self.cell_size, self.cols * self.cell_size)
         )
@@ -58,8 +62,6 @@ class Board:
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"],
         ]
 
-        self.board_state = self.initial_state
-
         self.pieces: list[str] = [
             "wP",
             "wN",
@@ -74,6 +76,16 @@ class Board:
             "bQ",
             "bK",
         ]
+
+        self.board_state: list[list[str]] = self.initial_state
+
+        self.king_possitions: dict[str, tuple[int, int]] = {"w": (7, 4), "b": (0, 4)}
+
+        self.checks: dict[str, bool] = {"w": False, "b": False}
+
+        self.checkmate: bool = False
+        self.stalemate: bool = False
+
         self.turn_to_move: Literal["w", "b"] = "w"
 
         self.row_to_rank: dict[int, int] = {
@@ -152,6 +164,19 @@ class Board:
     def switch_turn(self) -> None:
         self.turn_to_move = "w" if self.turn_to_move == "b" else "b"
 
+    def set_checkmate_stalemate(self) -> None:
+        if any_valid_moves(
+            self.board_state, self.turn_to_move, self.king_possitions[self.turn_to_move]
+        ):
+            return
+
+        if self.checks[self.turn_to_move]:
+            self.checkmate = True
+            print("checkmate")
+        else:
+            self.stalemate = True
+            print("stalemate")
+
     def make_move(self, move: Move) -> None:
         if (move.start_pos is not None and move.end_pos is not None) and (
             move.start_pos != move.end_pos
@@ -161,14 +186,47 @@ class Board:
                 self.board_state, move.start_pos, self.turn_to_move
             ):
 
+                temp_board_state: list[list[str]] = [
+                    list_item.copy() for list_item in self.board_state
+                ]
+
                 p_row, p_col = move.start_pos
-                self.board_state[p_row][p_col] = "__"
+
+                temp_board_state[p_row][p_col] = "__"
                 s_row, s_col = move.end_pos
-                self.board_state[s_row][s_col] = move.moved_piece
+                temp_board_state[s_row][s_col] = (
+                    self.pawn_promotion()
+                    if move.is_pawn_promotion
+                    else move.moved_piece
+                )
 
-                self.update_move_log(move)
+                king_pos = (
+                    move.end_pos
+                    if move.moved_piece[1] == "K"
+                    else self.king_possitions[self.turn_to_move]
+                )
 
-                self.switch_turn()
+                if not possition_under_attack(
+                    temp_board_state, king_pos, self.turn_to_move
+                ):
+
+                    self.board_state: list[list[str]] = [
+                        list_item.copy() for list_item in temp_board_state
+                    ]
+
+                    self.update_move_log(move)
+
+                    self.king_possitions[self.turn_to_move] = king_pos
+                    self.checks[self.turn_to_move] = False
+
+                    self.switch_turn()
+
+                    if possition_under_attack(
+                        self.board_state,
+                        self.king_possitions[self.turn_to_move],
+                        self.turn_to_move,
+                    ):
+                        self.checks[self.turn_to_move] = True
 
             self.selected_cell = None
             self.selected_piece = None
@@ -180,6 +238,9 @@ class Board:
             e_row, e_col = move.end_pos
             self.board_state[s_row][s_col] = move.moved_piece
             self.board_state[e_row][e_col] = move.captured_piece
+
+            if move.moved_piece[1] == "K":
+                self.king_possitions[move.moved_piece[0]] = (s_row, s_col)
 
             self.switch_turn()
 
@@ -201,6 +262,7 @@ class Board:
                 self.turn_to_move,
             )
         )
+        self.set_checkmate_stalemate()
 
     def draw_board(self) -> None:
         """drawing the background of the board with the light and dark color specified for each cell.
@@ -281,6 +343,37 @@ class Board:
                     self.cell_size,
                 )
                 pygame.draw.rect(self.screen, self.highlight_color, cell_rect)
+
+    def pawn_promotion(self) -> str:
+        pieces = (
+            ["wN", "wB", "wR", "wQ"]
+            if self.turn_to_move == "w"
+            else ["bN", "bB", "bR", "bQ"]
+        )
+        run = True
+        while run:
+            for i in range(4):
+                piece_surface = self.piece_images[pieces[i]]
+                piece_rect = pygame.Rect(
+                    (2 + i) * self.cell_size,
+                    4 * self.cell_size,
+                    self.cell_size,
+                    self.cell_size,
+                )
+                pygame.draw.rect(self.screen, self.background_color, piece_rect)
+                self.screen.blit(piece_surface, piece_rect)
+            pygame.display.update()
+            for event in pygame.event.get():
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    row, col = (
+                        mouse_pos[1] // self.cell_size,
+                        mouse_pos[0] // self.cell_size,
+                    )
+                    if row == 4 and col in range(2, 6):
+                        print("hi")
+                    else:
+                        continue
 
     def draw(self) -> None:
         """calling the draw_board(), highlight_cell(), highlight_last_move(), draw_pieces() respectively.

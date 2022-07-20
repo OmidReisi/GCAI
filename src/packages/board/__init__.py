@@ -5,6 +5,7 @@ from ..logics import get_possible_moves, possition_under_attack, any_valid_moves
 
 from typing import Literal
 
+import sys
 import pygame
 
 pygame.init()
@@ -350,30 +351,39 @@ class Board:
             if self.turn_to_move == "w"
             else ["bN", "bB", "bR", "bQ"]
         )
-        run = True
-        while run:
-            for i in range(4):
-                piece_surface = self.piece_images[pieces[i]]
-                piece_rect = pygame.Rect(
-                    (2 + i) * self.cell_size,
-                    4 * self.cell_size,
-                    self.cell_size,
-                    self.cell_size,
+        piece = pieces[3]
+
+        for i in range(4):
+            piece_surface = self.piece_images[pieces[i]]
+            piece_rect = pygame.Rect(
+                (2 + i) * self.cell_size,
+                4 * self.cell_size,
+                self.cell_size,
+                self.cell_size,
+            )
+            pygame.draw.rect(self.screen, self.background_color, piece_rect)
+            self.screen.blit(piece_surface, piece_rect)
+        pygame.display.update()
+
+        piece_selected = False
+
+        while not piece_selected:
+            event = pygame.event.wait()
+
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                row, col = (
+                    mouse_pos[1] // self.cell_size,
+                    mouse_pos[0] // self.cell_size,
                 )
-                pygame.draw.rect(self.screen, self.background_color, piece_rect)
-                self.screen.blit(piece_surface, piece_rect)
-            pygame.display.update()
-            for event in pygame.event.get():
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    mouse_pos = pygame.mouse.get_pos()
-                    row, col = (
-                        mouse_pos[1] // self.cell_size,
-                        mouse_pos[0] // self.cell_size,
-                    )
-                    if row == 4 and col in range(2, 6):
-                        print("hi")
-                    else:
-                        continue
+
+                if row == 4 and col in range(2, 6):
+                    return pieces[col - 2]
+        return piece
 
     def draw(self) -> None:
         """calling the draw_board(), highlight_cell(), highlight_last_move(), draw_pieces() respectively.

@@ -3,7 +3,10 @@ from .check import possition_under_attack
 
 
 def get_possible_moves(
-    board_state: list[list[str]], selected_pos: tuple[int, int], turn_to_move: str
+    board_state: list[list[str]],
+    selected_pos: tuple[int, int],
+    turn_to_move: str,
+    last_move: Move,
 ) -> list[Move]:
 
     row, col = selected_pos
@@ -13,7 +16,14 @@ def get_possible_moves(
     if selected_side == turn_to_move:
 
         if piece == "P":
-            return get_pawn_moves(board_state, selected_pos, turn_to_move)
+            move_list = get_pawn_moves(board_state, selected_pos, turn_to_move)
+
+            move = get_en_passant(board_state, selected_pos, turn_to_move, last_move)
+
+            if move is not None:
+                move_list.append(move)
+
+            return move_list
         if piece == "N":
             return get_knight_moves(board_state, selected_pos, turn_to_move)
         if piece == "B":
@@ -26,12 +36,6 @@ def get_possible_moves(
             return get_king_moves(board_state, selected_pos, turn_to_move)
 
     return []
-
-
-# def pawn_promotion(
-#     board_state: list[list[str]], selected_pos: tuple[int, int], turn_to_move: str
-# ):
-#     pass
 
 
 def get_pawn_moves(
@@ -126,6 +130,56 @@ def get_pawn_moves(
                     )
 
         return moves
+
+
+def get_en_passant(
+    board_state: list[list[str]],
+    selected_pos: tuple[int, int],
+    turn_to_move: str,
+    last_move: Move | None,
+) -> Move | None:
+    if last_move is None:
+        return None
+
+    p_row, p_col = selected_pos
+
+    if turn_to_move == "w" and p_row == 3:
+        if p_col - 1 in range(8) and board_state[p_row][p_col - 1] == "bP":
+            if last_move.is_two_square_pawn_move():
+                move = Move(
+                    selected_pos, (p_row - 1, p_col - 1), board_state, turn_to_move
+                )
+                move.set_en_passant()
+                move.set_en_passant_pos((p_row, p_col - 1))
+                return move
+        if p_col + 1 in range(8) and board_state[p_row][p_col + 1] == "bP":
+            if last_move.is_two_square_pawn_move():
+                move = Move(
+                    selected_pos, (p_row - 1, p_col + 1), board_state, turn_to_move
+                )
+                move.set_en_passant()
+                move.set_en_passant_pos((p_row, p_col + 1))
+                return move
+
+    if turn_to_move == "b" and p_row == 4:
+        if p_col - 1 in range(8) and board_state[p_row][p_col - 1] == "wP":
+            if last_move.is_two_square_pawn_move():
+                move = Move(
+                    selected_pos, (p_row + 1, p_col - 1), board_state, turn_to_move
+                )
+                move.set_en_passant()
+                move.set_en_passant_pos((p_row, p_col - 1))
+                return move
+        if p_col + 1 in range(8) and board_state[p_row][p_col + 1] == "wP":
+            if last_move.is_two_square_pawn_move():
+                move = Move(
+                    selected_pos, (p_row + 1, p_col + 1), board_state, turn_to_move
+                )
+                move.set_en_passant()
+                move.set_en_passant_pos((p_row, p_col + 1))
+                return move
+
+    return None
 
 
 def get_knight_moves(
@@ -496,12 +550,17 @@ def get_king_moves(
 
 
 def any_valid_moves(
-    board_state: list[list[str]], turn_to_move: str, initial_king_pos: tuple[int, int]
+    board_state: list[list[str]],
+    turn_to_move: str,
+    initial_king_pos: tuple[int, int],
+    last_move: Move | None,
 ) -> bool:
     for row in range(8):
         for col in range(8):
             if board_state[row][col][0] == turn_to_move:
-                move_list = get_possible_moves(board_state, (row, col), turn_to_move)
+                move_list = get_possible_moves(
+                    board_state, (row, col), turn_to_move, last_move
+                )
                 for move in move_list:
                     temp_board_state = [listitem.copy() for listitem in board_state]
                     s_row, s_col = move.start_pos

@@ -167,7 +167,10 @@ class Board:
 
     def set_checkmate_stalemate(self) -> None:
         if any_valid_moves(
-            self.board_state, self.turn_to_move, self.king_possitions[self.turn_to_move]
+            self.board_state,
+            self.turn_to_move,
+            self.king_possitions[self.turn_to_move],
+            self.get_last_move(),
         ):
             return
 
@@ -178,14 +181,37 @@ class Board:
             self.stalemate = True
             print("stalemate")
 
+    def get_last_move(self) -> Move | None:
+        if len(self.move_log) == 0:
+            return None
+        return self.move_log[-1]
+
     def make_move(self, move: Move) -> None:
         if (move.start_pos is not None and move.end_pos is not None) and (
             move.start_pos != move.end_pos
         ):
 
-            if move in get_possible_moves(
-                self.board_state, move.start_pos, self.turn_to_move
-            ):
+            available_moves: list[Move] = get_possible_moves(
+                self.board_state,
+                move.start_pos,
+                self.turn_to_move,
+                self.get_last_move(),
+            )
+
+            if move in available_moves:
+
+                last_available_move: Move | None = (
+                    available_moves[-1] if available_moves != [] else None
+                )
+
+                if last_available_move is not None and move == last_available_move:
+
+                    if (
+                        move == last_available_move
+                        and last_available_move.is_en_passant
+                    ):
+                        move.set_en_passant()
+                        move.set_en_passant_pos(last_available_move.en_passant_pos)
 
                 temp_board_state: list[list[str]] = [
                     list_item.copy() for list_item in self.board_state
@@ -200,6 +226,12 @@ class Board:
                     if move.is_pawn_promotion
                     else move.moved_piece
                 )
+
+                if move.is_en_passant:
+
+                    temp_board_state[move.en_passant_pos[0]][
+                        move.en_passant_pos[1]
+                    ] = "__"
 
                 king_pos = (
                     move.end_pos
@@ -239,6 +271,11 @@ class Board:
             e_row, e_col = move.end_pos
             self.board_state[s_row][s_col] = move.moved_piece
             self.board_state[e_row][e_col] = move.captured_piece
+
+            if move.is_en_passant:
+                self.board_state[move.en_passant_pos[0]][
+                    move.en_passant_pos[1]
+                ] = f"{self.turn_to_move}P"
 
             if move.moved_piece[1] == "K":
                 self.king_possitions[move.moved_piece[0]] = (s_row, s_col)

@@ -82,6 +82,11 @@ class Board:
 
         self.king_possitions: dict[str, tuple[int, int]] = {"w": (7, 4), "b": (0, 4)}
 
+        self.castle_rights: dict[str, dict[str, bool]] = {
+            "w": {"short": True, "long": True},
+            "b": {"short": True, "long": True},
+        }
+
         self.checks: dict[str, bool] = {"w": False, "b": False}
 
         self.checkmate: bool = False
@@ -152,7 +157,23 @@ class Board:
                 self.selected_piece is not None
                 and self.board_state[s_row][s_col] != "__"
             ):
+
                 p_row, p_col = self.selected_piece
+
+                if self.selected_piece == self.king_possitions[self.turn_to_move]:
+                    if (
+                        self.castle_rights[self.turn_to_move]["short"]
+                        and s_row == p_row
+                        and s_col == p_col + 3
+                    ):
+                        return
+                    if (
+                        self.castle_rights[self.turn_to_move]["long"]
+                        and s_row == p_row
+                        and s_col == p_col - 4
+                    ):
+                        return
+
                 if (
                     self.board_state[p_row][p_col][0]
                     == self.board_state[s_row][s_col][0]
@@ -171,6 +192,7 @@ class Board:
             self.turn_to_move,
             self.king_possitions[self.turn_to_move],
             self.get_last_move(),
+            self.castle_rights[self.turn_to_move],
         ):
             return
 
@@ -196,15 +218,14 @@ class Board:
                 move.start_pos,
                 self.turn_to_move,
                 self.get_last_move(),
+                self.castle_rights[self.turn_to_move],
             )
 
             if move in available_moves:
 
-                last_available_move: Move | None = (
-                    available_moves[-1] if available_moves != [] else None
-                )
+                last_available_move: Move = available_moves[-1]
 
-                if last_available_move is not None and move == last_available_move:
+                if move == last_available_move:
 
                     if (
                         move == last_available_move
@@ -216,6 +237,8 @@ class Board:
                 temp_board_state: list[list[str]] = [
                     list_item.copy() for list_item in self.board_state
                 ]
+                if move.is_castle:
+                    move.update_end_pos()
 
                 p_row, p_col = move.start_pos
 
@@ -239,6 +262,18 @@ class Board:
                     else self.king_possitions[self.turn_to_move]
                 )
 
+                if move.is_castle:
+                    if move.get_castle_type() == "short":
+                        temp_board_state[s_row][s_col - 1] = temp_board_state[s_row][
+                            s_col + 1
+                        ]
+                        temp_board_state[s_row][s_col + 1] = "__"
+                    elif move.get_castle_type() == "long":
+                        temp_board_state[s_row][s_col + 1] = temp_board_state[s_row][
+                            s_col - 2
+                        ]
+                        temp_board_state[s_row][s_col - 2] = "__"
+
                 if not possition_under_attack(
                     temp_board_state, king_pos, self.turn_to_move
                 ):
@@ -247,7 +282,23 @@ class Board:
                         list_item.copy() for list_item in temp_board_state
                     ]
 
+                    move.castle_rights = {
+                        side: self.castle_rights[side].copy()
+                        for side in self.castle_rights.keys()
+                    }
+
                     self.update_move_log(move)
+
+                    if king_pos != self.king_possitions[self.turn_to_move]:
+
+                        self.castle_rights[self.turn_to_move]["short"] = False
+                        self.castle_rights[self.turn_to_move]["long"] = False
+
+                    elif move.moved_piece[1] == "R":
+                        if move.start_pos[1] == "0":
+                            self.castle_rights[self.turn_to_move]["long"] = False
+                        elif move.start_pos[1] == "7":
+                            self.castle_rights[self.turn_to_move]["short"] = False
 
                     self.king_possitions[self.turn_to_move] = king_pos
                     self.checks[self.turn_to_move] = False
@@ -266,6 +317,7 @@ class Board:
 
     def undo_move(self) -> None:
         if self.move_log:
+            self.switch_turn()
             move = self.move_log.pop()
             s_row, s_col = move.start_pos
             e_row, e_col = move.end_pos
@@ -277,10 +329,22 @@ class Board:
                     move.en_passant_pos[1]
                 ] = f"{self.turn_to_move}P"
 
+            if move.is_castle:
+                if move.get_castle_type() == "short":
+                    self.board_state[e_row][7] = f"{self.turn_to_move}R"
+                    self.board_state[e_row][e_col - 1] = "__"
+
+                elif move.get_castle_type() == "long":
+                    self.board_state[e_row][0] = f"{self.turn_to_move}R"
+                    self.board_state[e_row][e_col + 1] = "__"
+
             if move.moved_piece[1] == "K":
                 self.king_possitions[move.moved_piece[0]] = (s_row, s_col)
 
-            self.switch_turn()
+            self.castle_rights = {
+                side: move.castle_rights[side].copy()
+                for side in move.castle_rights.keys()
+            }
 
     def get_file_rank(self, pos: tuple[int, int]) -> str:
 

@@ -7,6 +7,7 @@ def get_possible_moves(
     selected_pos: tuple[int, int],
     turn_to_move: str,
     last_move: Move,
+    castle_rights: dict[str, bool],
 ) -> list[Move]:
 
     row, col = selected_pos
@@ -33,7 +34,9 @@ def get_possible_moves(
         if piece == "Q":
             return get_queen_moves(board_state, selected_pos, turn_to_move)
         if piece == "K":
-            return get_king_moves(board_state, selected_pos, turn_to_move)
+            return get_king_moves(board_state, selected_pos, turn_to_move) + get_castle(
+                board_state, selected_pos, turn_to_move, castle_rights
+            )
 
     return []
 
@@ -549,17 +552,87 @@ def get_king_moves(
     return moves
 
 
+def get_castle(
+    board_state: list[list[str]],
+    selected_pos: tuple[int, int],
+    turn_to_move: str,
+    castle_rights: dict[str, bool],
+) -> list[Move]:
+
+    moves: list[Move] = []
+
+    p_row, p_col = selected_pos
+
+    if castle_rights["short"]:
+
+        if all(
+            [
+                board_state[p_row][p_col + 1] == "__",
+                board_state[p_row][p_col + 2] == "__",
+            ]
+        ):
+            if not any(
+                [
+                    possition_under_attack(board_state, (p_row, p_col), turn_to_move),
+                    possition_under_attack(
+                        board_state, (p_row, p_col + 1), turn_to_move
+                    ),
+                    possition_under_attack(
+                        board_state, (p_row, p_col + 2), turn_to_move
+                    ),
+                ]
+            ):
+
+                moves.append(
+                    Move(selected_pos, (p_row, p_col + 2), board_state, turn_to_move)
+                )
+                moves.append(
+                    Move(selected_pos, (p_row, p_col + 3), board_state, turn_to_move)
+                )
+
+    if castle_rights["long"]:
+
+        if all(
+            [
+                board_state[p_row][p_col - 1] == "__",
+                board_state[p_row][p_col - 2] == "__",
+                board_state[p_row][p_col - 3] == "__",
+            ]
+        ):
+            if not any(
+                [
+                    possition_under_attack(board_state, (p_row, p_col), turn_to_move),
+                    possition_under_attack(
+                        board_state, (p_row, p_col - 1), turn_to_move
+                    ),
+                    possition_under_attack(
+                        board_state, (p_row, p_col - 2), turn_to_move
+                    ),
+                ]
+            ):
+
+                moves.append(
+                    Move(selected_pos, (p_row, p_col - 2), board_state, turn_to_move)
+                )
+                moves.append(
+                    Move(selected_pos, (p_row, p_col - 4), board_state, turn_to_move)
+                )
+
+    return moves
+
+
 def any_valid_moves(
     board_state: list[list[str]],
     turn_to_move: str,
     initial_king_pos: tuple[int, int],
     last_move: Move | None,
+    castle_rights: dict[str, bool],
 ) -> bool:
     for row in range(8):
         for col in range(8):
             if board_state[row][col][0] == turn_to_move:
                 move_list = get_possible_moves(
-                    board_state, (row, col), turn_to_move, last_move
+                    board_state, (row, col), turn_to_move, last_move, castle_rights
                 )
                 for move in move_list:
                     temp_board_state = [listitem.copy() for listitem in board_state]

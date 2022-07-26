@@ -40,6 +40,29 @@ class Move:
         if self.moved_piece == "bP" and self.end_pos[0] == 7:
             self.is_pawn_promotion = True
 
+        self.row_to_rank: dict[int, int] = {
+            0: 8,
+            1: 7,
+            2: 6,
+            3: 5,
+            4: 4,
+            5: 3,
+            6: 2,
+            7: 1,
+        }
+        self.col_to_file: dict[int, str] = {
+            0: "a",
+            1: "b",
+            2: "c",
+            3: "d",
+            4: "e",
+            5: "f",
+            6: "g",
+            7: "h",
+        }
+
+        self.notation: str = self.get_notation()
+
     def set_promoted_piece(self, piece: str) -> None:
         if self.is_pawn_promotion:
             self.promoted_piece = piece
@@ -62,6 +85,8 @@ class Move:
 
     @property
     def is_castle(self) -> bool:
+        if self.start_pos is None or self.end_pos is None:
+            return False
         if self.moved_piece[1] == "K" and self.start_pos[0] == self.end_pos[0]:
             if self.end_pos[1] - self.start_pos[1] in [2, -2, 3, -4]:
                 return True
@@ -83,6 +108,34 @@ class Move:
             else:
                 self.end_pos = (p_row, p_col - 2)
             self.captured_piece = "__"
+
+    def get_notation(self) -> str | None:
+        if self.start_pos is None or self.end_pos is None:
+            return None
+        if self.is_castle:
+            if self.get_castle_type() == "short":
+                return "0-0"
+            if self.get_castle_type() == "long":
+                return "0-0-0"
+        piece = "" if self.moved_piece[1] == "P" else self.moved_piece[1]
+        capture = "" if self.captured_piece == "__" else "x"
+        if self.is_en_passant:
+            capture = "x"
+
+        if capture == "x" and piece == "":
+            piece = self.col_to_file[self.start_pos[1]]
+        promotion = f"={self.promoted_piece[1]}" if self.is_pawn_promotion else ""
+
+        return (
+            piece
+            + capture
+            + self.col_to_file[self.end_pos[1]]
+            + str(self.row_to_rank[self.end_pos[0]])
+            + promotion
+        )
+
+    def update_notation(self, notation_part: str) -> None:
+        self.notation = self.get_notation() + notation_part
 
     def __eq__(self, other: Move) -> bool:
         if (

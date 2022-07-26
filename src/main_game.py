@@ -36,6 +36,8 @@ def main() -> None:
                     board.switch_view()
                 if event.key == pygame.K_r:
                     board.reset_board()
+                if event.key == pygame.K_n:
+                    board.print_move_notations()
 
         clock.tick(60)
 

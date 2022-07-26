@@ -118,6 +118,7 @@ class Board:
         }
 
         self.move_log: list[Move] = []
+        self.new_move: bool = False
 
         self.piece_images: dict[str, pygame.surface.Surface] = {}
 
@@ -202,6 +203,8 @@ class Board:
         self.selected_cell = None
 
     def set_checkmate_stalemate(self) -> None:
+        if not self.new_move:
+            return
         if any_valid_moves(
             self.board_state,
             self.turn_to_move,
@@ -213,6 +216,7 @@ class Board:
 
         if self.checks[self.turn_to_move]:
             self.checkmate = True
+            self.move_log[-1].update_notation("#")
             print("checkmate")
         else:
             self.stalemate = True
@@ -264,6 +268,8 @@ class Board:
                     if move.is_pawn_promotion
                     else move.moved_piece
                 )
+                if move.is_pawn_promotion:
+                    move.promoted_piece = temp_board_state[s_row][s_col]
 
                 if move.is_en_passant:
 
@@ -302,8 +308,6 @@ class Board:
                         for side in self.castle_rights.keys()
                     }
 
-                    self.update_move_log(move)
-
                     if king_pos != self.king_possitions[self.turn_to_move]:
 
                         self.castle_rights[self.turn_to_move]["short"] = False
@@ -326,11 +330,16 @@ class Board:
                         self.turn_to_move,
                     ):
                         self.checks[self.turn_to_move] = True
+                        move.update_notation("+")
+
+                    self.update_move_log(move)
+                    self.new_move = True
 
             self.selected_cell = None
             self.selected_piece = None
 
     def undo_move(self) -> None:
+        self.new_move = True
         if self.move_log:
             move = self.move_log.pop()
             s_row, s_col = move.start_pos
@@ -532,6 +541,10 @@ class Board:
         self.highlight_cell()
         self.draw_pieces()
         pygame.display.update()
+
+    def print_move_notations(self):
+        for move in self.move_log:
+            print(move.notation)
 
     def reset_board(self) -> None:
         self.board_state = self.initial_state

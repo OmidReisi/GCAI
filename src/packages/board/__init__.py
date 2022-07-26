@@ -41,8 +41,11 @@ class Board:
         self.dark_color: RGB_Color = dark_color
         self.light_color: RGB_Color = light_color
         self.highlight_color: RGB_Color = highlight_color
-        self.font: pygame.font.Font = pygame.font.Font(
+        self.board_font: pygame.font.Font = pygame.font.Font(
             r"../res/fonts/ChessMeridaUnicode.ttf", 30
+        )
+        self.text_font: pygame.font.Font = pygame.font.Font(
+            r"../res/fonts/calibrib.ttf", 50
         )
         self.font_color: RGB_Color = font_color
         self.background_color: RGB_Color = background_color
@@ -50,6 +53,8 @@ class Board:
         self.screen: pygame.surface.Surface = pygame.display.set_mode(
             (self.rows * self.cell_size, self.cols * self.cell_size)
         )
+
+        self.help_window_active: bool = False
 
         # initial_state of the board and how the pieces are set up. ("__" shows the empty cells)
         self.initial_state: list[list[str]] = [
@@ -199,6 +204,9 @@ class Board:
         self.turn_to_move = "w" if self.turn_to_move == "b" else "b"
 
     def switch_view(self) -> None:
+        if self.help_window_active:
+            return
+
         self.view = "w" if self.view == "b" else "b"
         self.selected_cell = None
 
@@ -339,6 +347,9 @@ class Board:
             self.selected_piece = None
 
     def undo_move(self) -> None:
+        if self.help_window_active:
+            return
+
         self.new_move = True
         if self.move_log:
             move = self.move_log.pop()
@@ -379,6 +390,8 @@ class Board:
         self.move_log.append(move)
 
     def update_board_state(self, pos: tuple[int, int]):
+        if self.help_window_active:
+            return
         self.set_selected_cell(pos)
         self.set_selected_piece()
         self.make_move(
@@ -412,7 +425,7 @@ class Board:
                 else:
                     pygame.draw.rect(self.screen, self.dark_color, cell_rect)
                 if row == self.rows - 1:
-                    text_surface = self.font.render(
+                    text_surface = self.board_font.render(
                         (self.col_to_file[self.row_col_switch(col)]),
                         True,
                         self.font_color,
@@ -422,7 +435,7 @@ class Board:
                     self.screen.blit(text_surface, text_rect)
 
                 if col == 0:
-                    text_surface = self.font.render(
+                    text_surface = self.board_font.render(
                         str(self.row_to_rank[self.row_col_switch(row)]),
                         True,
                         self.font_color,
@@ -528,6 +541,46 @@ class Board:
                     return pieces[col - 2]
         return piece
 
+    def print_help(self) -> None:
+        self.screen.fill(self.background_color)
+
+        title_surface = self.text_font.render("Help Window", True, self.font_color)
+        title_rect = title_surface.get_rect(
+            center=(self.cell_size * 4, self.cell_size // 2)
+        )
+
+        help_surface = self.text_font.render(
+            "h - show this help screen", True, self.font_color
+        )
+        help_rect = help_surface.get_rect(
+            midleft=(self.cell_size // 2, 2 * self.cell_size)
+        )
+
+        view_surface = self.text_font.render(
+            "v - change view (flip board)", True, self.font_color
+        )
+        view_rect = view_surface.get_rect(
+            midleft=(self.cell_size // 2, 3 * self.cell_size)
+        )
+
+        undo_surface = self.text_font.render(
+            "z - undo last move", True, self.font_color
+        )
+        undo_rect = undo_surface.get_rect(
+            midleft=(self.cell_size // 2, 4 * self.cell_size)
+        )
+
+        reset_surface = self.text_font.render("r - reset board", True, self.font_color)
+        reset_rect = reset_surface.get_rect(
+            midleft=(self.cell_size // 2, 5 * self.cell_size)
+        )
+
+        self.screen.blit(title_surface, title_rect)
+        self.screen.blit(help_surface, help_rect)
+        self.screen.blit(view_surface, view_rect)
+        self.screen.blit(undo_surface, undo_rect)
+        self.screen.blit(reset_surface, reset_rect)
+
     def draw(self) -> None:
         """calling the draw_board(), highlight_cell(), highlight_last_move(), draw_pieces() respectively.
 
@@ -536,10 +589,14 @@ class Board:
         Returns:
             None:
         """
-        self.draw_board()
-        self.highlight_last_move()
-        self.highlight_cell()
-        self.draw_pieces()
+        if not self.help_window_active:
+            self.draw_board()
+            self.highlight_last_move()
+            self.highlight_cell()
+            self.draw_pieces()
+        else:
+            self.print_help()
+
         pygame.display.update()
 
     def print_move_notations(self):
@@ -547,6 +604,9 @@ class Board:
             print(move.notation)
 
     def reset_board(self) -> None:
+        if self.help_window_active:
+            return
+
         self.board_state = self.initial_state
         self.turn_to_move = "w"
         self.view = "w"

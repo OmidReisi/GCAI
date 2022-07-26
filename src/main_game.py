@@ -34,6 +34,8 @@ def main() -> None:
                     board.undo_move()
                 if event.key == pygame.K_v:
                     board.switch_view()
+                if event.key == pygame.K_r:
+                    board.reset_board()
 
         clock.tick(60)
 

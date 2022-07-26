@@ -175,13 +175,13 @@ class Board:
                     if (
                         self.castle_rights[self.turn_to_move]["short"]
                         and s_row == p_row
-                        and s_col == p_col + self.row_col_switch(3)
+                        and s_col == p_col + 3
                     ):
                         return
                     if (
                         self.castle_rights[self.turn_to_move]["long"]
                         and s_row == p_row
-                        and s_col == p_col - self.row_col_switch(4)
+                        and s_col == p_col - 4
                     ):
                         return
 
@@ -247,16 +247,7 @@ class Board:
                         and last_available_move.is_en_passant
                     ):
                         move.set_en_passant()
-                        move.set_en_passant_pos(
-                            (
-                                self.row_col_switch(
-                                    last_available_move.en_passant_pos[0]
-                                ),
-                                self.row_col_switch(
-                                    last_available_move.en_passant_pos[1]
-                                ),
-                            )
-                        )
+                        move.set_en_passant_pos(last_available_move.en_passant_pos)
 
                 temp_board_state: list[list[str]] = [
                     list_item.copy() for list_item in self.board_state
@@ -288,15 +279,15 @@ class Board:
 
                 if move.is_castle:
                     if move.get_castle_type() == "short":
-                        temp_board_state[s_row][
-                            s_col - self.row_col_switch(1)
-                        ] = temp_board_state[s_row][s_col + self.row_col_switch(1)]
-                        temp_board_state[s_row][s_col + self.row_col_switch(1)] = "__"
+                        temp_board_state[s_row][s_col - 1] = temp_board_state[s_row][
+                            s_col + 1
+                        ]
+                        temp_board_state[s_row][s_col + 1] = "__"
                     elif move.get_castle_type() == "long":
-                        temp_board_state[s_row][
-                            s_col + self.row_col_switch(1)
-                        ] = temp_board_state[s_row][s_col - self.row_col_switch(2)]
-                        temp_board_state[s_row][s_col - self.row_col_switch(2)] = "__"
+                        temp_board_state[s_row][s_col + 1] = temp_board_state[s_row][
+                            s_col - 2
+                        ]
+                        temp_board_state[s_row][s_col - 2] = "__"
 
                 if not possition_under_attack(
                     temp_board_state, king_pos, self.turn_to_move
@@ -341,7 +332,6 @@ class Board:
 
     def undo_move(self) -> None:
         if self.move_log:
-            self.switch_turn()
             move = self.move_log.pop()
             s_row, s_col = move.start_pos
             e_row, e_col = move.end_pos
@@ -353,14 +343,16 @@ class Board:
                     move.en_passant_pos[1]
                 ] = f"{self.turn_to_move}P"
 
+            self.switch_turn()
+
             if move.is_castle:
                 if move.get_castle_type() == "short":
                     self.board_state[e_row][7] = f"{self.turn_to_move}R"
-                    self.board_state[e_row][e_col - self.row_col_switch(1)] = "__"
+                    self.board_state[e_row][e_col - 1] = "__"
 
                 elif move.get_castle_type() == "long":
                     self.board_state[e_row][0] = f"{self.turn_to_move}R"
-                    self.board_state[e_row][e_col + self.row_col_switch(1)] = "__"
+                    self.board_state[e_row][e_col + 1] = "__"
 
             if move.moved_piece[1] == "K":
                 self.king_possitions[move.moved_piece[0]] = (s_row, s_col)
@@ -540,3 +532,20 @@ class Board:
         self.highlight_cell()
         self.draw_pieces()
         pygame.display.update()
+
+    def reset_board(self) -> None:
+        self.board_state = self.initial_state
+        self.turn_to_move = "w"
+        self.view = "w"
+        self.king_possitions = {"w": (7, 4), "b": (0, 4)}
+
+        self.castle_rights = {
+            "w": {"short": True, "long": True},
+            "b": {"short": True, "long": True},
+        }
+
+        self.checks = {"w": False, "b": False}
+
+        self.checkmate = False
+        self.stalemate = False
+        self.move_log = []

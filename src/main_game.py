@@ -32,6 +32,8 @@ def main() -> None:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_z:
                     board.undo_move()
+                if event.key == pygame.K_v:
+                    board.switch_view()
 
         clock.tick(60)
 

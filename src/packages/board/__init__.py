@@ -80,6 +80,8 @@ class Board:
 
         self.board_state: list[list[str]] = self.initial_state
 
+        self.view: str = "w"
+
         self.king_possitions: dict[str, tuple[int, int]] = {"w": (7, 4), "b": (0, 4)}
 
         self.castle_rights: dict[str, dict[str, bool]] = {
@@ -141,8 +143,17 @@ class Board:
                 (self.cell_size, self.cell_size),
             )
 
+    def row_col_switch(self, row_col: int) -> int:
+        if self.view == "w":
+            return row_col
+        return 7 - row_col
+
     def set_selected_cell(self, pos: tuple[int, int]) -> None:
-        selected_cell = (pos[1] // self.cell_size, pos[0] // self.cell_size)
+
+        selected_cell = (
+            self.row_col_switch(pos[1] // self.cell_size),
+            self.row_col_switch(pos[0] // self.cell_size),
+        )
         self.selected_cell = (
             None if self.selected_cell == selected_cell else selected_cell
         )
@@ -164,13 +175,13 @@ class Board:
                     if (
                         self.castle_rights[self.turn_to_move]["short"]
                         and s_row == p_row
-                        and s_col == p_col + 3
+                        and s_col == p_col + self.row_col_switch(3)
                     ):
                         return
                     if (
                         self.castle_rights[self.turn_to_move]["long"]
                         and s_row == p_row
-                        and s_col == p_col - 4
+                        and s_col == p_col - self.row_col_switch(4)
                     ):
                         return
 
@@ -185,6 +196,10 @@ class Board:
 
     def switch_turn(self) -> None:
         self.turn_to_move = "w" if self.turn_to_move == "b" else "b"
+
+    def switch_view(self) -> None:
+        self.view = "w" if self.view == "b" else "b"
+        self.selected_cell = None
 
     def set_checkmate_stalemate(self) -> None:
         if any_valid_moves(
@@ -232,7 +247,16 @@ class Board:
                         and last_available_move.is_en_passant
                     ):
                         move.set_en_passant()
-                        move.set_en_passant_pos(last_available_move.en_passant_pos)
+                        move.set_en_passant_pos(
+                            (
+                                self.row_col_switch(
+                                    last_available_move.en_passant_pos[0]
+                                ),
+                                self.row_col_switch(
+                                    last_available_move.en_passant_pos[1]
+                                ),
+                            )
+                        )
 
                 temp_board_state: list[list[str]] = [
                     list_item.copy() for list_item in self.board_state
@@ -264,15 +288,15 @@ class Board:
 
                 if move.is_castle:
                     if move.get_castle_type() == "short":
-                        temp_board_state[s_row][s_col - 1] = temp_board_state[s_row][
-                            s_col + 1
-                        ]
-                        temp_board_state[s_row][s_col + 1] = "__"
+                        temp_board_state[s_row][
+                            s_col - self.row_col_switch(1)
+                        ] = temp_board_state[s_row][s_col + self.row_col_switch(1)]
+                        temp_board_state[s_row][s_col + self.row_col_switch(1)] = "__"
                     elif move.get_castle_type() == "long":
-                        temp_board_state[s_row][s_col + 1] = temp_board_state[s_row][
-                            s_col - 2
-                        ]
-                        temp_board_state[s_row][s_col - 2] = "__"
+                        temp_board_state[s_row][
+                            s_col + self.row_col_switch(1)
+                        ] = temp_board_state[s_row][s_col - self.row_col_switch(2)]
+                        temp_board_state[s_row][s_col - self.row_col_switch(2)] = "__"
 
                 if not possition_under_attack(
                     temp_board_state, king_pos, self.turn_to_move
@@ -332,11 +356,11 @@ class Board:
             if move.is_castle:
                 if move.get_castle_type() == "short":
                     self.board_state[e_row][7] = f"{self.turn_to_move}R"
-                    self.board_state[e_row][e_col - 1] = "__"
+                    self.board_state[e_row][e_col - self.row_col_switch(1)] = "__"
 
                 elif move.get_castle_type() == "long":
                     self.board_state[e_row][0] = f"{self.turn_to_move}R"
-                    self.board_state[e_row][e_col + 1] = "__"
+                    self.board_state[e_row][e_col + self.row_col_switch(1)] = "__"
 
             if move.moved_piece[1] == "K":
                 self.king_possitions[move.moved_piece[0]] = (s_row, s_col)
@@ -388,7 +412,9 @@ class Board:
                     pygame.draw.rect(self.screen, self.dark_color, cell_rect)
                 if row == self.rows - 1:
                     text_surface = self.font.render(
-                        (self.col_to_file[col]), True, self.font_color
+                        (self.col_to_file[self.row_col_switch(col)]),
+                        True,
+                        self.font_color,
                     )
 
                     text_rect = text_surface.get_rect(bottomright=cell_rect.bottomright)
@@ -396,7 +422,9 @@ class Board:
 
                 if col == 0:
                     text_surface = self.font.render(
-                        str(self.row_to_rank[row]), True, self.font_color
+                        str(self.row_to_rank[self.row_col_switch(row)]),
+                        True,
+                        self.font_color,
                     )
                     text_rect = text_surface.get_rect(topleft=cell_rect.topleft)
                     self.screen.blit(text_surface, text_rect)
@@ -418,29 +446,42 @@ class Board:
                     self.cell_size,
                 )
 
-                if self.board_state[row][col] != "__":
+                if (
+                    self.board_state[self.row_col_switch(row)][self.row_col_switch(col)]
+                    != "__"
+                ):
                     self.screen.blit(
-                        self.piece_images[self.board_state[row][col]], piece_rect
+                        self.piece_images[
+                            self.board_state[self.row_col_switch(row)][
+                                self.row_col_switch(col)
+                            ]
+                        ],
+                        piece_rect,
                     )
 
     def highlight_cell(self) -> None:
 
         if self.selected_cell is not None:
 
-            cell_rect: pygame.Rect = pygame.Rect(
-                self.selected_cell[1] * self.cell_size,
-                self.selected_cell[0] * self.cell_size,
-                self.cell_size,
-                self.cell_size,
-            )
-            pygame.draw.rect(self.screen, self.highlight_color, cell_rect)
+            row, col = self.selected_cell
+            if self.board_state[row][col][0] == self.turn_to_move:
+
+                row, col = self.row_col_switch(row), self.row_col_switch(col)
+
+                cell_rect: pygame.Rect = pygame.Rect(
+                    col * self.cell_size,
+                    row * self.cell_size,
+                    self.cell_size,
+                    self.cell_size,
+                )
+                pygame.draw.rect(self.screen, self.highlight_color, cell_rect)
 
     def highlight_last_move(self) -> None:
         if self.move_log:
             for cell in [self.move_log[-1].start_pos, self.move_log[-1].end_pos]:
                 cell_rect: pygame.Rect = pygame.Rect(
-                    cell[1] * self.cell_size,
-                    cell[0] * self.cell_size,
+                    self.row_col_switch(cell[1]) * self.cell_size,
+                    self.row_col_switch(cell[0]) * self.cell_size,
                     self.cell_size,
                     self.cell_size,
                 )

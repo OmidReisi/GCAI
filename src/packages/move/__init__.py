@@ -62,6 +62,8 @@ class Move:
         self.row_col_notation: str = ""
         self.notation: str = self.get_notation()
 
+        self.fifty_move_rule: int | None = None
+
     def set_promoted_piece(self, piece: str) -> None:
         if self.is_pawn_promotion:
             self.promoted_piece = piece
@@ -152,6 +154,15 @@ class Move:
 
     def update_notation(self, notation_part: str) -> None:
         self.notation = self.get_notation() + notation_part
+
+    def set_fifty_move_rule(self, previous_fifty_move_rule: int) -> None:
+        if self.start_pos is None or self.end_pos is None:
+            return
+        if self.moved_piece[1] == "P" or self.captured_piece != "__":
+            self.fifty_move_rule = 0
+
+        else:
+            self.fifty_move_rule = previous_fifty_move_rule + 1
 
     def __eq__(self, other: Move) -> bool:
         if (

@@ -1,4 +1,4 @@
-from ..utils.colors import RGB_Color, DARK_YELLOW
+from ..utils.colors import RGB_Color, DARK_YELLOW, DARK_RED
 from ..move import Move
 from ..logics import (
     get_possible_moves,
@@ -102,6 +102,8 @@ class Board:
 
         self.checkmate: bool = False
         self.stalemate: bool = False
+        self.draw_status: bool = False
+        self.draw_status_type: str | None = None
 
         self.turn_to_move: Literal["w", "b"] = "w"
 
@@ -127,7 +129,8 @@ class Board:
         }
 
         self.move_log: list[Move] = []
-        self.new_move: bool = False
+        self.new_move: bool = True
+        self.fifty_move_rule: int = 0
 
         self.piece_images: dict[str, pygame.surface.Surface] = {}
 
@@ -217,6 +220,7 @@ class Board:
     def set_checkmate_stalemate(self) -> None:
         if not self.new_move:
             return
+        self.new_move = False
         if any_valid_moves(
             self.board_state,
             self.turn_to_move,
@@ -229,10 +233,61 @@ class Board:
         if self.checks[self.turn_to_move]:
             self.checkmate = True
             self.move_log[-1].update_notation("#")
-            print("checkmate")
         else:
             self.stalemate = True
-            print("stalemate")
+
+    def set_draw(self) -> None:
+        white_materials: list[tuple(str, int)] = []
+        black_materials: list[str] = []
+        colored_bishops: int | None = None
+
+        if self.stalemate:
+            self.draw_status = True
+            self.draw_status_type = "stalemate"
+            return
+
+        if self.checkmate:
+            return
+
+        if self.fifty_move_rule // 2 == 50:
+            self.draw_status = True
+            self.draw_status_type = "50 move rule"
+            return
+
+        for row in range(8):
+            for col in range(8):
+                piece = self.board_state[row][col]
+                if piece[1] in ["Q", "R", "P"]:
+                    return
+                if piece[0] == "w":
+                    white_materials.append((piece, row + col))
+                elif piece[0] == "b":
+                    black_materials.append((piece, row + col))
+        if len(white_materials) <= 2 and len(black_materials) <= 2:
+            print("insufficient")
+            self.draw_status = True
+            self.draw_status_type = "insufficient materials"
+            return
+        for piece, pos in white_materials:
+            if piece[1] == "N":
+                return
+            if piece[1] == "B" and colored_bishops is None:
+                colored_bishops = pos % 2
+
+            elif piece[1] == "B" and colored_bishops != pos % 2:
+                return
+        colored_bishops = None
+
+        for piece, pos in black_materials:
+            if piece[1] == "N":
+                return
+            if piece[1] == "B" and colored_bishops is None:
+                colored_bishops = pos % 2
+
+            elif piece[1] == "B" and colored_bishops != pos % 2:
+                return
+        self.draw_status = True
+        self.draw_status_type = "insufficient materials"
 
     def get_last_move(self) -> Move | None:
         if len(self.move_log) == 0:
@@ -296,18 +351,6 @@ class Board:
                             if move.row_col_notation != "":
                                 break
 
-                #
-                # last_available_move: Move = available_moves[-1]
-                #
-                # if move == last_available_move:
-                #
-                #     if (
-                #         move == last_available_move
-                #         and last_available_move.is_en_passant
-                #     ):
-                #         move.set_en_passant()
-                #         move.set_en_passant_pos(last_available_move.en_passant_pos)
-                #
                 temp_board_state: list[list[str]] = [
                     list_item.copy() for list_item in self.board_state
                 ]
@@ -387,6 +430,9 @@ class Board:
                         self.checks[self.turn_to_move] = True
                         move.update_notation("+")
 
+                    move.set_fifty_move_rule(self.fifty_move_rule)
+                    self.fifty_move_rule = move.fifty_move_rule
+
                     self.update_move_log(move)
                     self.new_move = True
 
@@ -400,6 +446,16 @@ class Board:
         self.new_move = True
         if self.move_log:
             move = self.move_log.pop()
+            self.checkmate = False
+            self.stalemate = False
+            self.draw_status = False
+            self.draw_status_type = None
+
+            if len(self.move_log) == 0:
+                self.fifty_move_rule = 0
+            else:
+                self.fifty_move_rule = self.move_log[-1].fifty_move_rule
+
             s_row, s_col = move.start_pos
             e_row, e_col = move.end_pos
             self.board_state[s_row][s_col] = move.moved_piece
@@ -450,6 +506,7 @@ class Board:
             )
         )
         self.set_checkmate_stalemate()
+        self.set_draw()
 
     def draw_board(self) -> None:
         """drawing the background of the board with the light and dark color specified for each cell.
@@ -670,6 +727,50 @@ class Board:
         self.screen.blit(undo_surface, undo_rect)
         self.screen.blit(reset_surface, reset_rect)
 
+    def draw_game_results(self) -> None:
+        if self.checkmate:
+            winner = "White" if self.checks["b"] else "Black"
+            checkmate_surface_1 = self.text_font.render(
+                f"{winner} wins by checkmate",
+                True,
+                self.font_color,
+                self.background_color,
+            )
+            checkmate_rect_1 = checkmate_surface_1.get_rect(
+                center=(self.cell_size * 4, self.cell_size * 4)
+            )
+
+            checkmate_surface_2 = self.text_font.render(
+                f"{winner} wins by checkmate", True, DARK_RED
+            )
+            checkmate_rect_2 = checkmate_surface_2.get_rect(
+                center=(self.cell_size * 4 + 2, self.cell_size * 4 + 2)
+            )
+            self.screen.blit(checkmate_surface_1, checkmate_rect_1)
+            self.screen.blit(checkmate_surface_2, checkmate_rect_2)
+            return
+
+        if self.draw_status and self.draw_status_type is not None:
+            draw_surface_1 = self.text_font.render(
+                f"Draw by {self.draw_status_type}",
+                True,
+                self.font_color,
+                self.background_color,
+            )
+            draw_rect_1 = draw_surface_1.get_rect(
+                center=(self.cell_size * 4, self.cell_size * 4)
+            )
+
+            draw_surface_2 = self.text_font.render(
+                f"Draw by {self.draw_status_type}", True, DARK_RED
+            )
+            draw_rect_2 = draw_surface_2.get_rect(
+                center=(self.cell_size * 4 + 2, self.cell_size * 4 + 2)
+            )
+            self.screen.blit(draw_surface_1, draw_rect_1)
+            self.screen.blit(draw_surface_2, draw_rect_2)
+            return
+
     def draw(self) -> None:
         """calling the draw_board(), highlight_cell(), highlight_last_move(), draw_pieces() respectively.
 
@@ -684,6 +785,7 @@ class Board:
             self.highlight_cell()
             self.highlight_valid_moves()
             self.draw_pieces()
+            self.draw_game_results()
 
         else:
             self.print_help()
@@ -712,4 +814,4 @@ class Board:
 
         self.checkmate = False
         self.stalemate = False
-        self.move_log = []
+        self.move_log.clear()

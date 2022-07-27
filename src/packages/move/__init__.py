@@ -14,10 +14,8 @@ class Move:
         self.turn_to_move: str = turn_to_move
 
         self.is_pawn_promotion: bool = False
-        self.is_en_passant: bool = False
 
         self.promoted_piece: str | None = None
-        self.en_passant_pos: tuple[int, int] | None = None
 
         self.castle_rights: dict[str, dict[str, bool]] = {
             "w": {"short": True, "long": True},
@@ -61,6 +59,7 @@ class Move:
             7: "h",
         }
 
+        self.row_col_notation: str = ""
         self.notation: str = self.get_notation()
 
     def set_promoted_piece(self, piece: str) -> None:
@@ -76,12 +75,24 @@ class Move:
                 return True
         return False
 
-    def set_en_passant(self):
-        self.is_en_passant = True
+    @property
+    def is_en_passant(self) -> bool:
+        if self.start_pos is None or self.end_pos is None:
+            return False
+        if (
+            self.moved_piece[1] == "P"
+            and abs(self.start_pos[0] - self.end_pos[0]) == 1
+            and abs(self.start_pos[1] - self.end_pos[1]) == 1
+            and self.captured_piece == "__"
+        ):
+            return True
 
-    def set_en_passant_pos(self, pos: tuple[int, int]):
+        return False
+
+    @property
+    def en_passant_pos(self) -> tuple[int, int] | None:
         if self.is_en_passant:
-            self.en_passant_pos = pos
+            return (self.start_pos[0], self.end_pos[1])
 
     @property
     def is_castle(self) -> bool:
@@ -124,10 +135,15 @@ class Move:
 
         if capture == "x" and piece == "":
             piece = self.col_to_file[self.start_pos[1]]
-        promotion = f"={self.promoted_piece[1]}" if self.is_pawn_promotion else ""
+        promotion = (
+            f"={self.promoted_piece[1]}"
+            if self.is_pawn_promotion and self.promoted_piece is not None
+            else ""
+        )
 
         return (
             piece
+            + self.row_col_notation
             + capture
             + self.col_to_file[self.end_pos[1]]
             + str(self.row_to_rank[self.end_pos[0]])

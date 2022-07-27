@@ -1,7 +1,11 @@
-from pygame.constants import MOUSEBUTTONDOWN
-from ..utils.colors import RGB_Color
+from ..utils.colors import RGB_Color, DARK_YELLOW
 from ..move import Move
-from ..logics import get_possible_moves, possition_under_attack, any_valid_moves
+from ..logics import (
+    get_possible_moves,
+    possition_under_attack,
+    is_valid,
+    any_valid_moves,
+)
 
 from typing import Literal
 
@@ -250,17 +254,60 @@ class Board:
 
             if move in available_moves:
 
-                last_available_move: Move = available_moves[-1]
+                if move.moved_piece[1] not in ["P", "K"]:
+                    for row in range(8):
+                        if (
+                            self.board_state[row][move.start_pos[1]] == move.moved_piece
+                            and row != move.start_pos[0]
+                        ):
+                            moves_to_check = get_possible_moves(
+                                self.board_state,
+                                (row, move.start_pos[1]),
+                                self.turn_to_move,
+                                self.get_last_move(),
+                                self.castle_rights[self.turn_to_move],
+                            )
+                            for check_move in moves_to_check:
+                                if move.end_pos == check_move.end_pos:
+                                    move.row_col_notation = str(
+                                        self.row_to_rank[move.start_pos[0]]
+                                    )
+                                    break
+                            if move.row_col_notation != "":
+                                break
+                    for col in range(8):
+                        if (
+                            self.board_state[move.start_pos[0]][col] == move.moved_piece
+                            and col != move.start_pos[1]
+                        ):
+                            moves_to_check = get_possible_moves(
+                                self.board_state,
+                                (move.start_pos[0], col),
+                                self.turn_to_move,
+                                self.get_last_move(),
+                                self.castle_rights[self.turn_to_move],
+                            )
+                            for check_move in moves_to_check:
+                                if move.end_pos == check_move.end_pos:
+                                    move.row_col_notation = self.col_to_file[
+                                        move.start_pos[1]
+                                    ]
+                                    break
+                            if move.row_col_notation != "":
+                                break
 
-                if move == last_available_move:
-
-                    if (
-                        move == last_available_move
-                        and last_available_move.is_en_passant
-                    ):
-                        move.set_en_passant()
-                        move.set_en_passant_pos(last_available_move.en_passant_pos)
-
+                #
+                # last_available_move: Move = available_moves[-1]
+                #
+                # if move == last_available_move:
+                #
+                #     if (
+                #         move == last_available_move
+                #         and last_available_move.is_en_passant
+                #     ):
+                #         move.set_en_passant()
+                #         move.set_en_passant_pos(last_available_move.en_passant_pos)
+                #
                 temp_board_state: list[list[str]] = [
                     list_item.copy() for list_item in self.board_state
                 ]
@@ -488,7 +535,10 @@ class Board:
                     self.cell_size,
                     self.cell_size,
                 )
-                pygame.draw.rect(self.screen, self.highlight_color, cell_rect)
+                cell_surface = pygame.Surface((self.cell_size, self.cell_size))
+                cell_surface.fill(self.highlight_color)
+                cell_surface.set_alpha(150)
+                self.screen.blit(cell_surface, cell_rect)
 
     def highlight_last_move(self) -> None:
         if self.move_log:
@@ -499,7 +549,45 @@ class Board:
                     self.cell_size,
                     self.cell_size,
                 )
-                pygame.draw.rect(self.screen, self.highlight_color, cell_rect)
+                cell_surface = pygame.Surface((self.cell_size, self.cell_size))
+                cell_surface.fill(self.highlight_color)
+                cell_surface.set_alpha(150)
+                self.screen.blit(cell_surface, cell_rect)
+
+    def highlight_valid_moves(self) -> None:
+        if self.selected_piece is None:
+            return
+
+        possible_moves = get_possible_moves(
+            self.board_state,
+            self.selected_piece,
+            self.turn_to_move,
+            self.get_last_move(),
+            self.castle_rights[self.turn_to_move],
+        )
+
+        for move in possible_moves:
+            if is_valid(
+                self.board_state,
+                move,
+                self.turn_to_move,
+                self.king_possitions[self.turn_to_move],
+            ):
+                if move.is_castle:
+                    move.update_end_pos()
+
+                row, col = move.end_pos
+
+                cell_rect: pygame.Rect = pygame.Rect(
+                    self.row_col_switch(col) * self.cell_size,
+                    self.row_col_switch(row) * self.cell_size,
+                    self.cell_size,
+                    self.cell_size,
+                )
+                cell_surface = pygame.Surface((self.cell_size, self.cell_size))
+                cell_surface.fill(DARK_YELLOW)
+                cell_surface.set_alpha(150)
+                self.screen.blit(cell_surface, cell_rect)
 
     def pawn_promotion(self) -> str:
         pieces = (
@@ -517,6 +605,7 @@ class Board:
                 self.cell_size,
                 self.cell_size,
             )
+
             pygame.draw.rect(self.screen, self.background_color, piece_rect)
             self.screen.blit(piece_surface, piece_rect)
         pygame.display.update()
@@ -593,7 +682,9 @@ class Board:
             self.draw_board()
             self.highlight_last_move()
             self.highlight_cell()
+            self.highlight_valid_moves()
             self.draw_pieces()
+
         else:
             self.print_help()
 

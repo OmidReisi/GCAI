@@ -149,38 +149,26 @@ def get_en_passant(
     if turn_to_move == "w" and p_row == 3:
         if p_col - 1 in range(8) and board_state[p_row][p_col - 1] == "bP":
             if last_move.is_two_square_pawn_move():
-                move = Move(
+                return Move(
                     selected_pos, (p_row - 1, p_col - 1), board_state, turn_to_move
                 )
-                move.set_en_passant()
-                move.set_en_passant_pos((p_row, p_col - 1))
-                return move
         if p_col + 1 in range(8) and board_state[p_row][p_col + 1] == "bP":
             if last_move.is_two_square_pawn_move():
-                move = Move(
+                return Move(
                     selected_pos, (p_row - 1, p_col + 1), board_state, turn_to_move
                 )
-                move.set_en_passant()
-                move.set_en_passant_pos((p_row, p_col + 1))
-                return move
 
     if turn_to_move == "b" and p_row == 4:
         if p_col - 1 in range(8) and board_state[p_row][p_col - 1] == "wP":
             if last_move.is_two_square_pawn_move():
-                move = Move(
+                return Move(
                     selected_pos, (p_row + 1, p_col - 1), board_state, turn_to_move
                 )
-                move.set_en_passant()
-                move.set_en_passant_pos((p_row, p_col - 1))
-                return move
         if p_col + 1 in range(8) and board_state[p_row][p_col + 1] == "wP":
             if last_move.is_two_square_pawn_move():
-                move = Move(
+                return Move(
                     selected_pos, (p_row + 1, p_col + 1), board_state, turn_to_move
                 )
-                move.set_en_passant()
-                move.set_en_passant_pos((p_row, p_col + 1))
-                return move
 
     return None
 

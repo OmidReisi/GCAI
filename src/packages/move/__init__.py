@@ -95,6 +95,7 @@ class Move:
     def en_passant_pos(self) -> tuple[int, int] | None:
         if self.is_en_passant:
             return (self.start_pos[0], self.end_pos[1])
+        return None
 
     @property
     def is_castle(self) -> bool:

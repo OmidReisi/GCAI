@@ -6,7 +6,7 @@ def get_possible_moves(
     board_state: list[list[str]],
     selected_pos: tuple[int, int],
     turn_to_move: str,
-    last_move: Move,
+    last_move: Move | None,
     castle_rights: dict[str, bool],
 ) -> list[Move]:
 

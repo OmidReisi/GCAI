@@ -237,7 +237,7 @@ class Board:
             self.stalemate = True
 
     def set_draw(self) -> None:
-        white_materials: list[tuple(str, int)] = []
+        white_materials: list[tuple[str, int]] = []
         black_materials: list[str] = []
         colored_bishops: int | None = None
 
@@ -289,6 +289,56 @@ class Board:
         self.draw_status = True
         self.draw_status_type = "insufficient materials"
 
+    def set_row_col_move_notation(self, move: Move) -> str:
+
+        row_col_notation: str = ""
+        move_list: list[Move] = []
+        row_flag: bool = False
+        col_flag: bool = False
+
+        if move.moved_piece[1] in ["P", "K"]:
+            return row_col_notation
+
+        for row in range(8):
+            for col in range(8):
+
+                if (
+                    self.board_state[row][col] == move.moved_piece
+                    and (row, col) != move.start_pos
+                ):
+                    moves_to_check = get_possible_moves(
+                        self.board_state,
+                        (row, col),
+                        self.turn_to_move,
+                        self.get_last_move(),
+                        self.castle_rights[self.turn_to_move],
+                    )
+                    for check_move in moves_to_check:
+                        if move.end_pos == check_move.end_pos and is_valid(
+                            self.board_state,
+                            check_move,
+                            self.turn_to_move,
+                            self.king_possitions[self.turn_to_move],
+                        ):
+                            move_list.append(check_move)
+
+        for check_move in move_list:
+            if col_flag is False and move.start_pos[0] == check_move.start_pos[0]:
+                col_flag = True
+            if row_flag is False and move.start_pos[1] == check_move.start_pos[1]:
+                row_flag = True
+
+            if row_flag and col_flag:
+                break
+
+        if col_flag:
+            row_col_notation = self.col_to_file[move.start_pos[1]]
+
+        if row_flag:
+            row_col_notation += str(self.row_to_rank[move.start_pos[0]])
+
+        return row_col_notation
+
     def get_last_move(self) -> Move | None:
         if len(self.move_log) == 0:
             return None
@@ -309,47 +359,7 @@ class Board:
 
             if move in available_moves:
 
-                if move.moved_piece[1] not in ["P", "K"]:
-                    for row in range(8):
-                        if (
-                            self.board_state[row][move.start_pos[1]] == move.moved_piece
-                            and row != move.start_pos[0]
-                        ):
-                            moves_to_check = get_possible_moves(
-                                self.board_state,
-                                (row, move.start_pos[1]),
-                                self.turn_to_move,
-                                self.get_last_move(),
-                                self.castle_rights[self.turn_to_move],
-                            )
-                            for check_move in moves_to_check:
-                                if move.end_pos == check_move.end_pos:
-                                    move.row_col_notation = str(
-                                        self.row_to_rank[move.start_pos[0]]
-                                    )
-                                    break
-                            if move.row_col_notation != "":
-                                break
-                    for col in range(8):
-                        if (
-                            self.board_state[move.start_pos[0]][col] == move.moved_piece
-                            and col != move.start_pos[1]
-                        ):
-                            moves_to_check = get_possible_moves(
-                                self.board_state,
-                                (move.start_pos[0], col),
-                                self.turn_to_move,
-                                self.get_last_move(),
-                                self.castle_rights[self.turn_to_move],
-                            )
-                            for check_move in moves_to_check:
-                                if move.end_pos == check_move.end_pos:
-                                    move.row_col_notation = self.col_to_file[
-                                        move.start_pos[1]
-                                    ]
-                                    break
-                            if move.row_col_notation != "":
-                                break
+                move.row_col_notation = self.set_row_col_move_notation(move)
 
                 temp_board_state: list[list[str]] = [
                     list_item.copy() for list_item in self.board_state

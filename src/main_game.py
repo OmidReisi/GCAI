@@ -21,6 +21,7 @@ def main() -> None:
 
     while game_run:
 
+        board.update_board_state()
         board.draw()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -28,7 +29,7 @@ def main() -> None:
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                board.update_board_state(pygame.mouse.get_pos())
+                board.set_selected_cell(pygame.mouse.get_pos())
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_z:
                     board.undo_move()

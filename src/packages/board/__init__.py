@@ -1,3 +1,4 @@
+from pickle import FALSE
 from ..utils.colors import RGB_Color, DARK_YELLOW, DARK_RED
 from ..move import Move
 from ..logics import (
@@ -6,6 +7,7 @@ from ..logics import (
     is_valid,
     any_valid_moves,
 )
+from ..engine import get_random_move
 
 from typing import Literal
 
@@ -88,6 +90,8 @@ class Board:
         ]
 
         self.board_state: list[list[str]] = self.initial_state
+
+        self.players: dict[str, str] = {"w": "AI", "b": "AI"}
 
         self.view: str = "w"
 
@@ -243,7 +247,7 @@ class Board:
 
         if self.stalemate:
             self.draw_status = True
-            self.draw_status_type = "stalemate"
+            self.draw_status_type = "Stalemate"
             return
 
         if self.checkmate:
@@ -264,9 +268,8 @@ class Board:
                 elif piece[0] == "b":
                     black_materials.append((piece, row + col))
         if len(white_materials) <= 2 and len(black_materials) <= 2:
-            print("insufficient")
             self.draw_status = True
-            self.draw_status_type = "insufficient materials"
+            self.draw_status_type = "Insufficient Materials"
             return
         for piece, pos in white_materials:
             if piece[1] == "N":
@@ -287,7 +290,7 @@ class Board:
             elif piece[1] == "B" and colored_bishops != pos % 2:
                 return
         self.draw_status = True
-        self.draw_status_type = "insufficient materials"
+        self.draw_status_type = "Insufficient Materials"
 
     def set_row_col_move_notation(self, move: Move) -> str:
 
@@ -344,7 +347,10 @@ class Board:
             return None
         return self.move_log[-1]
 
-    def make_move(self, move: Move) -> None:
+    def make_move(self, move: Move | None) -> None:
+        if move is None:
+            return
+
         if (move.start_pos is not None and move.end_pos is not None) and (
             move.start_pos != move.end_pos
         ):
@@ -502,19 +508,34 @@ class Board:
     def update_move_log(self, move: Move) -> None:
         self.move_log.append(move)
 
-    def update_board_state(self, pos: tuple[int, int]):
+    def update_board_state(self):
         if self.help_window_active:
             return
-        self.set_selected_cell(pos)
         self.set_selected_piece()
-        self.make_move(
-            Move(
-                self.selected_piece,
-                self.selected_cell,
-                self.board_state,
-                self.turn_to_move,
+        if self.players[self.turn_to_move] == "Human":
+            self.make_move(
+                Move(
+                    self.selected_piece,
+                    self.selected_cell,
+                    self.board_state,
+                    self.turn_to_move,
+                )
             )
-        )
+        elif (
+            self.players[self.turn_to_move] == "AI"
+            and self.checkmate is False
+            and self.draw_status is False
+        ):
+            pygame.time.delay(200)
+            self.make_move(
+                get_random_move(
+                    self.board_state,
+                    self.turn_to_move,
+                    self.king_possitions[self.turn_to_move],
+                    self.castle_rights[self.turn_to_move],
+                    self.get_last_move(),
+                )
+            )
         self.set_checkmate_stalemate()
         self.set_draw()
 
@@ -741,7 +762,7 @@ class Board:
         if self.checkmate:
             winner = "White" if self.checks["b"] else "Black"
             checkmate_surface_1 = self.text_font.render(
-                f"{winner} wins by checkmate",
+                f"{winner} wins by Checkmate",
                 True,
                 self.font_color,
                 self.background_color,
@@ -751,7 +772,7 @@ class Board:
             )
 
             checkmate_surface_2 = self.text_font.render(
-                f"{winner} wins by checkmate", True, DARK_RED
+                f"{winner} wins by Checkmate", True, DARK_RED
             )
             checkmate_rect_2 = checkmate_surface_2.get_rect(
                 center=(self.cell_size * 4 + 2, self.cell_size * 4 + 2)
@@ -824,4 +845,6 @@ class Board:
 
         self.checkmate = False
         self.stalemate = False
+        self.draw_status = False
+        self.draw_status_type = None
         self.move_log.clear()

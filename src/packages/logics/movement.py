@@ -607,32 +607,3 @@ def get_castle(
                 )
 
     return moves
-
-
-def any_valid_moves(
-    board_state: list[list[str]],
-    turn_to_move: str,
-    initial_king_pos: tuple[int, int],
-    last_move: Move | None,
-    castle_rights: dict[str, bool],
-) -> bool:
-    for row in range(8):
-        for col in range(8):
-            if board_state[row][col][0] == turn_to_move:
-                move_list = get_possible_moves(
-                    board_state, (row, col), turn_to_move, last_move, castle_rights
-                )
-                for move in move_list:
-                    temp_board_state = [listitem.copy() for listitem in board_state]
-                    s_row, s_col = move.start_pos
-                    e_row, e_col = move.end_pos
-                    temp_board_state[e_row][e_col] = move.moved_piece
-                    temp_board_state[s_row][s_col] = "__"
-                    king_pos = (
-                        move.end_pos if move.moved_piece[1] == "K" else initial_king_pos
-                    )
-                    if not possition_under_attack(
-                        temp_board_state, king_pos, turn_to_move
-                    ):
-                        return True
-    return False

@@ -1,4 +1,3 @@
-from pickle import FALSE
 from ..utils.colors import RGB_Color, DARK_YELLOW, DARK_RED
 from ..move import Move
 from ..logics import (
@@ -6,8 +5,9 @@ from ..logics import (
     possition_under_attack,
     is_valid,
     any_valid_moves,
+    get_valid_moves,
 )
-from ..engine import get_random_move
+from ..engine import get_best_move
 
 from typing import Literal
 
@@ -527,13 +527,20 @@ class Board:
             and self.draw_status is False
         ):
             pygame.time.delay(200)
+            opponent = "w" if self.turn_to_move == "b" else "b"
             self.make_move(
-                get_random_move(
+                get_best_move(
+                    get_valid_moves(
+                        self.board_state,
+                        self.turn_to_move,
+                        self.king_possitions[self.turn_to_move],
+                        self.castle_rights[self.turn_to_move],
+                        self.get_last_move(),
+                    ),
                     self.board_state,
                     self.turn_to_move,
-                    self.king_possitions[self.turn_to_move],
-                    self.castle_rights[self.turn_to_move],
-                    self.get_last_move(),
+                    self.king_possitions[opponent],
+                    self.castle_rights[opponent],
                 )
             )
         self.set_checkmate_stalemate()

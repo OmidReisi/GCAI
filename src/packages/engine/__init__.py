@@ -1,1 +1,1 @@
-from .random_move import get_random_move
+from .best_move import get_best_move

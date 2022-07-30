@@ -22,13 +22,13 @@ def get_move_evaluation(
 
     move_evaluation = current_board_eval - board_eval
 
-    turn_to_move = get_switched_turn(turn_to_move)
+    opponent_turn = get_switched_turn(turn_to_move)
 
-    if possition_under_attack(temp_board_state, opponent_king_pos, turn_to_move):
+    if possition_under_attack(temp_board_state, opponent_king_pos, opponent_turn):
         is_check = True
 
     if not any_valid_moves(
-        board_state, turn_to_move, opponent_king_pos, move, opponent_castle_rights
+        board_state, opponent_turn, opponent_king_pos, move, opponent_castle_rights
     ):
         if is_check:
             return turn_evaluation * 1000

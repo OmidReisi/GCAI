@@ -91,7 +91,7 @@ class Board:
 
         self.board_state: list[list[str]] = self.initial_state
 
-        self.players: dict[str, str] = {"w": "AI", "b": "AI"}
+        self.players: dict[str, str] = {"w": "Human", "b": "AI"}
 
         self.view: str = "w"
 
@@ -539,6 +539,8 @@ class Board:
                     ),
                     self.board_state,
                     self.turn_to_move,
+                    self.king_possitions[self.turn_to_move],
+                    self.castle_rights[self.turn_to_move],
                     self.king_possitions[opponent],
                     self.castle_rights[opponent],
                 )

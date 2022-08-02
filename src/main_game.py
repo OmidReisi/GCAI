@@ -19,6 +19,8 @@ def main() -> None:
     board: Board = Board(120, 8, 8, BROWN, BEIGE, LIGHT_GREEN, BLACK, LIGHT_GREY)
     clock: pygame.time.Clock = pygame.time.Clock()
 
+    board.set_game_type()
+
     while game_run:
 
         board.update_board_state()

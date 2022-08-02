@@ -94,7 +94,8 @@ class Board:
 
         self.board_state: list[list[str]] = self.initial_state
 
-        self.players: dict[str, str] = {"w": "Human", "b": "AI"}
+        self.game_type: int | None = None
+        self.players: dict[str, str] | None = None
 
         self.view: str = "w"
 
@@ -840,6 +841,217 @@ class Board:
         for move in self.move_log:
             print(move.notation)
 
+    def set_game_type(self):
+
+        title_1_surface = self.text_font.render("Welcome to GCAI", True, (0, 0, 0))
+        title_1_rect = title_1_surface.get_rect(
+            center=(self.cell_size * 4, self.cell_size // 2)
+        )
+        title_2_surface = self.text_font.render("Choose a Game Type", True, (0, 0, 0))
+        title_2_rect = title_2_surface.get_rect(
+            midtop=(
+                (
+                    title_1_rect.midbottom[0],
+                    title_1_rect.midbottom[1] + self.cell_size // 2,
+                )
+            )
+        )
+
+        type_1_surface = self.text_font.render("1. Player Vs. Player", True, (0, 0, 0))
+        type_1_rect = type_1_surface.get_rect(
+            center=(
+                self.cell_size * 4,
+                self.cell_size * 4 - self.cell_size // 2,
+            )
+        )
+        type_2_surface = self.text_font.render("2. Engine Vs. Engine", True, (0, 0, 0))
+        type_2_rect = type_2_surface.get_rect(
+            midtop=(
+                type_1_rect.midbottom[0],
+                type_1_rect.midbottom[1] + self.cell_size // 2,
+            )
+        )
+        type_3_surface = self.text_font.render("3. Player Vs. Engine", True, (0, 0, 0))
+        type_3_rect = type_3_surface.get_rect(
+            midtop=(
+                type_2_rect.midbottom[0],
+                type_2_rect.midbottom[1] + self.cell_size // 2,
+            )
+        )
+
+        border_1_rect = type_1_rect.inflate(20, 20)
+        border_2_rect = type_2_rect.inflate(20, 20)
+        border_3_rect = type_3_rect.inflate(20, 20)
+
+        border_rects = [border_1_rect, border_2_rect, border_3_rect]
+
+        rect_background_colors: list[tuple[int, int, int]] = [
+            (0, 0, 0),
+            (0, 0, 0),
+            (0, 0, 0),
+        ]
+
+        while self.game_type is None:
+
+            rect_background_colors = [
+                (0, 0, 0),
+                (0, 0, 0),
+                (0, 0, 0),
+            ]
+
+            self.screen.fill(self.background_color)
+
+            self.screen.blit(title_1_surface, title_1_rect)
+            self.screen.blit(title_2_surface, title_2_rect)
+
+            mouse_pos = pygame.mouse.get_pos()
+
+            for num, border_rect in enumerate(border_rects):
+                if border_rect.collidepoint(mouse_pos):
+                    rect_background_colors[num] = (173, 128, 45)
+
+            for num, border_rect in enumerate(border_rects):
+                pygame.draw.rect(
+                    self.screen,
+                    rect_background_colors[num],
+                    border_rect,
+                    width=3,
+                    border_radius=15,
+                )
+
+            self.screen.blit(type_1_surface, type_1_rect)
+            self.screen.blit(type_2_surface, type_2_rect)
+            self.screen.blit(type_3_surface, type_3_rect)
+
+            pygame.display.update()
+
+            key = None
+            click = False
+            event = pygame.event.wait()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                click = True
+
+            if event.type == pygame.KEYDOWN:
+                key = event.key
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if key == pygame.K_1 or (click and border_1_rect.collidepoint(mouse_pos)):
+                self.game_type = 1
+                self.players = {"w": "Human", "b": "Human"}
+                return
+
+            if key == pygame.K_2 or (click and border_2_rect.collidepoint(mouse_pos)):
+                self.game_type = 2
+                self.players = {"w": "AI", "b": "AI"}
+                return
+
+            if key == pygame.K_3 or (click and border_3_rect.collidepoint(mouse_pos)):
+                self.game_type = 3
+                self.set_players()
+
+    def set_players(self):
+
+        title_surface = self.text_font.render("Choose a Color", True, (0, 0, 0))
+        title_rect = title_surface.get_rect(
+            center=(self.cell_size * 4, self.cell_size // 2)
+        )
+        type_1_surface = self.text_font.render("1. White", True, (0, 0, 0))
+        type_1_rect = type_1_surface.get_rect(
+            center=(
+                self.cell_size * 4,
+                self.cell_size * 4 - self.cell_size // 2,
+            )
+        )
+        type_2_surface = self.text_font.render("2. Black", True, (0, 0, 0))
+        type_2_rect = type_2_surface.get_rect(
+            midtop=(
+                type_1_rect.midbottom[0],
+                type_1_rect.midbottom[1] + self.cell_size // 2,
+            )
+        )
+        type_3_surface = self.text_font.render("3. Random", True, (0, 0, 0))
+        type_3_rect = type_3_surface.get_rect(
+            midtop=(
+                type_2_rect.midbottom[0],
+                type_2_rect.midbottom[1] + self.cell_size // 2,
+            )
+        )
+
+        border_1_rect = type_1_rect.inflate(20, 20)
+        border_2_rect = type_2_rect.inflate(20, 20)
+        border_3_rect = type_3_rect.inflate(20, 20)
+
+        border_rects = [border_1_rect, border_2_rect, border_3_rect]
+
+        rect_background_colors: list[tuple[int, int, int]] = [
+            (0, 0, 0),
+            (0, 0, 0),
+            (0, 0, 0),
+        ]
+
+        while self.players is None:
+
+            rect_background_colors = [
+                (0, 0, 0),
+                (0, 0, 0),
+                (0, 0, 0),
+            ]
+
+            self.screen.fill(self.background_color)
+
+            self.screen.blit(title_surface, title_rect)
+
+            mouse_pos = pygame.mouse.get_pos()
+
+            for num, border_rect in enumerate(border_rects):
+                if border_rect.collidepoint(mouse_pos):
+                    rect_background_colors[num] = (173, 128, 45)
+
+            for num, border_rect in enumerate(border_rects):
+                pygame.draw.rect(
+                    self.screen,
+                    rect_background_colors[num],
+                    border_rect,
+                    width=3,
+                    border_radius=15,
+                )
+
+            self.screen.blit(type_1_surface, type_1_rect)
+            self.screen.blit(type_2_surface, type_2_rect)
+            self.screen.blit(type_3_surface, type_3_rect)
+
+            pygame.display.update()
+
+            key = None
+            click = False
+            event = pygame.event.wait()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                click = True
+            if event.type == pygame.KEYDOWN:
+                key = event.key
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if key == pygame.K_1 or (click and border_1_rect.collidepoint(mouse_pos)):
+                self.players = {"w": "Human", "b": "AI"}
+                self.view = "w"
+                return
+            if key == pygame.K_2 or (click and border_2_rect.collidepoint(mouse_pos)):
+                self.players = {"w": "AI", "b": "Human"}
+                self.view = "b"
+                return
+            if key == pygame.K_3 or (click and border_3_rect.collidepoint(mouse_pos)):
+                white_side = choice(["Human", "AI"])
+                black_side = "Human" if white_side == "AI" else "AI"
+                self.players = {"w": white_side, "b": black_side}
+                self.view = "w" if white_side == "Human" else "b"
+                return
+
     def reset_board(self) -> None:
         if self.help_window_active:
             return
@@ -861,3 +1073,8 @@ class Board:
         self.draw_status = False
         self.draw_status_type = None
         self.move_log.clear()
+
+        self.game_type = None
+        self.players = None
+
+        self.set_game_type()

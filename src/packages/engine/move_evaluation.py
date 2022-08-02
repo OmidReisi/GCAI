@@ -72,8 +72,6 @@ def get_move_evaluation(
 
     opponent_max_eval = -1000
     opponent_turn_eval = -1 * turn_evaluation
-    # move_evals: list[int] = []
-    # print(len(move_evals), depth)
 
     for opponent_move in opponent_valid_moves:
         opponent_move_eval = get_move_evaluation(
@@ -88,9 +86,7 @@ def get_move_evaluation(
         )
         if opponent_turn_eval * opponent_move_eval > opponent_max_eval:
             opponent_max_eval = opponent_move_eval * opponent_turn_eval
-        # if opponent_max_eval >= 1000:
-        #     opponent_max_eval = 1000
-        #     break
+
     return current_move_eval + opponent_max_eval * opponent_turn_eval
 
 
@@ -174,50 +170,3 @@ def get_move_evaluation(
 #     )
 #
 #
-def get_best_move(
-    valid_moves: list[Move],
-    board_state: list[list[str]],
-    turn_to_move: str,
-    king_pos: tuple[int, int],
-    castle_rights: dict[str, bool],
-    opponent_king_pos: tuple[int, int],
-    opponent_castle_rights: dict[str, bool],
-    depth: int,
-) -> Move | None:
-
-    best_moves: list[Move] = []
-
-    min_max_eval = 1000 if turn_to_move == "b" else -1000
-
-    if len(valid_moves) == 0:
-        return None
-    # print(turn_to_move)
-    # print(king_pos)
-    # print(castle_rights)
-    # print(opponent_king_pos)
-    # print(opponent_castle_rights)
-
-    for move in valid_moves:
-
-        move_eval = get_move_evaluation(
-            board_state,
-            turn_to_move,
-            move,
-            king_pos,
-            castle_rights,
-            opponent_king_pos,
-            opponent_castle_rights,
-            depth,
-        )
-
-        if turn_to_move == "b" and move_eval < min_max_eval:
-            best_moves = [move]
-            min_max_eval = move_eval
-        elif turn_to_move == "w" and move_eval > min_max_eval:
-            best_moves = [move]
-            min_max_eval = move_eval
-
-        elif move_eval == min_max_eval:
-            best_moves.append(move)
-
-    return get_random_move(best_moves)

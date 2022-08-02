@@ -23,8 +23,9 @@ def main() -> None:
 
     while game_run:
 
-        board.update_board_state()
         board.draw()
+        board.update_board_state()
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_run = False

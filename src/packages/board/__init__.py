@@ -547,7 +547,7 @@ class Board:
                     self.castle_rights[self.turn_to_move],
                     self.king_possitions[opponent],
                     self.castle_rights[opponent],
-                    3,
+                    2,
                 )
             )
         self.set_checkmate_stalemate()

@@ -7,13 +7,31 @@ def get_switched_turn(turn: str) -> str:
     return "b"
 
 
+def get_castle_rights(move: Move, castle_rights: dict[str, bool]) -> dict[str, bool]:
+    temp_castle_rights: dict[str, bool] = castle_rights.copy()
+    if move.moved_piece[1] == "K":
+        temp_castle_rights["short"] = False
+        temp_castle_rights["long"] = False
+
+    if move.moved_piece[1] == "R" and move.start_pos[1] == 0:
+        temp_castle_rights["long"] = False
+    if move.moved_piece[1] == "R" and move.start_pos[1] == 7:
+        temp_castle_rights["short"] = False
+
+    return temp_castle_rights
+
+
+def get_king_pos(move: Move, king_pos: tuple[int, int]) -> tuple[int, int]:
+    if move.moved_piece[1] == "K":
+        return move.end_pos
+    return king_pos
+
+
 def make_move(
     board_state: list[list[str]], turn_to_move: str, move: Move
 ) -> list[list[str]]:
 
     temp_board_state: list[list[str]] = [list_item.copy() for list_item in board_state]
-    if move.is_castle:
-        move.update_end_pos()
 
     p_row, p_col = move.start_pos
 

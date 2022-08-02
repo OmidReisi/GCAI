@@ -176,3 +176,6 @@ class Move:
             return True
 
         return False
+
+    def __ne__(self, other: Move) -> bool:
+        return not self == other

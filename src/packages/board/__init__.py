@@ -7,9 +7,12 @@ from ..logics import (
     any_valid_moves,
     get_valid_moves,
 )
-from ..engine import get_best_move
+from ..engine import (
+    get_best_move,
+)
 
 from typing import Literal
+from random import choice
 
 import sys
 import pygame
@@ -526,7 +529,7 @@ class Board:
             and self.checkmate is False
             and self.draw_status is False
         ):
-            pygame.time.delay(200)
+            # pygame.time.delay(200)
             opponent = "w" if self.turn_to_move == "b" else "b"
             self.make_move(
                 get_best_move(
@@ -543,6 +546,7 @@ class Board:
                     self.castle_rights[self.turn_to_move],
                     self.king_possitions[opponent],
                     self.castle_rights[opponent],
+                    3,
                 )
             )
         self.set_checkmate_stalemate()

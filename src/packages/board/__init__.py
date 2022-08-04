@@ -15,6 +15,7 @@ from typing import Literal
 from random import choice
 
 import sys
+import json
 import pygame
 
 pygame.init()
@@ -147,6 +148,9 @@ class Board:
         self.selected_cell: tuple[int, int] | None = None
         self.selected_piece: tuple[int, int] | None = None
 
+        with open(r"./packages/utils/openings_list.json", "r") as data_file:
+            self.openings: list[dict[str, str | list[Move]]] = json.load(data_file)
+
         pygame.display.set_caption("Chess Game")
 
     def load_piece_images(self) -> None:
@@ -261,6 +265,16 @@ class Board:
             self.draw_status = True
             self.draw_status_type = "50 move rule"
             return
+        if len(self.move_log) >= 6:
+            move_log = self.move_log[-8:]
+            if (
+                move_log[0] == move_log[4]
+                and move_log[1] == move_log[5]
+                and move_log[2] == move_log[6]
+                and move_log[3] == move_log[7]
+            ):
+                self.draw_status = True
+                self.draw_status_type = "Repetition"
 
         for row in range(8):
             for col in range(8):
@@ -353,6 +367,7 @@ class Board:
 
     def make_move(self, move: Move | None) -> None:
         if move is None:
+            print("move is None")
             return
 
         if (move.start_pos is not None and move.end_pos is not None) and (
@@ -453,8 +468,12 @@ class Board:
                     move.set_fifty_move_rule(self.fifty_move_rule)
                     self.fifty_move_rule = move.fifty_move_rule
 
+                    if len(self.move_log) > 0:
+                        move.opening_name = self.move_log[-1].opening_name
+
                     self.update_move_log(move)
                     self.new_move = True
+                    self.update_openings()
 
             self.selected_cell = None
             self.selected_piece = None
@@ -512,6 +531,20 @@ class Board:
     def update_move_log(self, move: Move) -> None:
         self.move_log.append(move)
 
+    def update_openings(self) -> None:
+        index = len(self.move_log) - 1
+        if index < 0:
+            return
+        remaining_openings = []
+        for opening in self.openings:
+            if opening["moves"][index] == self.move_log[-1].notation:
+                if index == len(opening["moves"]) - 1:
+                    self.move_log[-1].opening_name = opening["name"]
+                if index + 1 < len(opening["moves"]):
+                    remaining_openings.append(opening)
+
+        self.openings = [opening.copy() for opening in remaining_openings]
+
     def update_board_state(self):
         if self.help_window_active:
             return
@@ -532,23 +565,30 @@ class Board:
         ):
             # pygame.time.delay(200)
             opponent = "w" if self.turn_to_move == "b" else "b"
-            self.make_move(
-                get_best_move(
-                    get_valid_moves(
-                        self.board_state,
-                        self.turn_to_move,
-                        self.king_possitions[self.turn_to_move],
-                        self.castle_rights[self.turn_to_move],
-                        self.get_last_move(),
-                    ),
+            move_to_make = get_best_move(
+                get_valid_moves(
                     self.board_state,
                     self.turn_to_move,
                     self.king_possitions[self.turn_to_move],
                     self.castle_rights[self.turn_to_move],
-                    self.king_possitions[opponent],
-                    self.castle_rights[opponent],
-                    2,
-                )
+                    self.get_last_move(),
+                ),
+                self.board_state,
+                self.turn_to_move,
+                self.king_possitions[self.turn_to_move],
+                self.castle_rights[self.turn_to_move],
+                self.king_possitions[opponent],
+                self.castle_rights[opponent],
+                self.openings,
+                len(self.move_log),
+                self.get_last_move(),
+                2,
+            )
+            if move_to_make[1]:
+                pygame.time.delay(200)
+
+            self.make_move(
+                move_to_make[0],
             )
         self.set_checkmate_stalemate()
         self.set_draw()
@@ -839,7 +879,7 @@ class Board:
 
     def print_move_notations(self):
         for move in self.move_log:
-            print(move.notation)
+            print(move.opening_name, " : ", move.notation)
 
     def set_game_type(self):
 
@@ -1076,5 +1116,8 @@ class Board:
 
         self.game_type = None
         self.players = None
+
+        with open(r"./packages/utils/openings_list.json", "r") as data_file:
+            self.openings: list[dict[str, str | list[str]]] = json.load(data_file)
 
         self.set_game_type()

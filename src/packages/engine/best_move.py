@@ -2,7 +2,7 @@ from .engine_move import make_move, get_switched_turn
 from .move_evaluation import get_move_evaluation
 from .random_move import get_random_move
 from ..move import Move
-from ..logics import get_valid_moves
+from ..logics import get_valid_moves, possition_under_attack
 
 
 def get_best_move(
@@ -13,6 +13,9 @@ def get_best_move(
     castle_rights: dict[str, bool],
     opponent_king_pos: tuple[int, int],
     opponent_castle_rights: dict[str, bool],
+    openings: list[dict[str, str | list[str]]],
+    opening_index: int,
+    last_move: Move | None,
     depth: int,
 ) -> Move | None:
 
@@ -22,6 +25,25 @@ def get_best_move(
 
     if len(valid_moves) == 0:
         return None
+
+    if len(openings) != 0:
+        move_list: list[Move] = []
+        for opening in openings:
+            if len(opening["moves"]) > opening_index:
+                move_to_add = Move.from_notation(
+                    opening["moves"][opening_index],
+                    board_state,
+                    turn_to_move,
+                    last_move,
+                    castle_rights,
+                    king_pos,
+                )
+                if move_to_add is not None:
+                    move_list.append(move_to_add)
+
+        if len(move_list) > 0:
+            return get_random_move(move_list, True)
+        print("error no opening move")
 
     for move in valid_moves:
 
@@ -35,7 +57,6 @@ def get_best_move(
             opponent_castle_rights,
             depth,
         )
-
         if turn_to_move == "b" and move_eval < min_max_eval:
             best_moves = [move]
             min_max_eval = move_eval
@@ -46,4 +67,4 @@ def get_best_move(
         elif move_eval == min_max_eval:
             best_moves.append(move)
 
-    return get_random_move(best_moves)
+    return get_random_move(best_moves, False)

@@ -8,11 +8,15 @@ def get_possible_moves(
     turn_to_move: str,
     last_move: Move | None,
     castle_rights: dict[str, bool],
+    given_piece: str | None = None,
 ) -> list[Move]:
 
     row, col = selected_pos
 
     selected_side, piece = board_state[row][col]
+
+    if given_piece is not None and selected_side + piece != given_piece:
+        return []
 
     if selected_side == turn_to_move:
 

@@ -1,6 +1,50 @@
 from __future__ import annotations
 
 
+row_to_rank: dict[int, int] = {
+    0: 8,
+    1: 7,
+    2: 6,
+    3: 5,
+    4: 4,
+    5: 3,
+    6: 2,
+    7: 1,
+}
+col_to_file: dict[int, str] = {
+    0: "a",
+    1: "b",
+    2: "c",
+    3: "d",
+    4: "e",
+    5: "f",
+    6: "g",
+    7: "h",
+}
+
+
+rank_to_row: dict[int, int] = {
+    8: 0,
+    7: 1,
+    6: 2,
+    5: 3,
+    4: 4,
+    3: 5,
+    2: 6,
+    1: 7,
+}
+file_to_col: dict[str, int] = {
+    "a": 0,
+    "b": 1,
+    "c": 2,
+    "d": 3,
+    "e": 4,
+    "f": 5,
+    "g": 6,
+    "h": 7,
+}
+
+
 class Move:
     def __init__(
         self,
@@ -38,26 +82,7 @@ class Move:
         if self.moved_piece == "bP" and self.end_pos[0] == 7:
             self.is_pawn_promotion = True
 
-        self.row_to_rank: dict[int, int] = {
-            0: 8,
-            1: 7,
-            2: 6,
-            3: 5,
-            4: 4,
-            5: 3,
-            6: 2,
-            7: 1,
-        }
-        self.col_to_file: dict[int, str] = {
-            0: "a",
-            1: "b",
-            2: "c",
-            3: "d",
-            4: "e",
-            5: "f",
-            6: "g",
-            7: "h",
-        }
+        self.opening_name: str | None = None
 
         self.row_col_notation: str = ""
         self.notation: str = self.get_notation()
@@ -137,7 +162,7 @@ class Move:
             capture = "x"
 
         if capture == "x" and piece == "":
-            piece = self.col_to_file[self.start_pos[1]]
+            piece = col_to_file[self.start_pos[1]]
         promotion = (
             f"={self.promoted_piece[1]}"
             if self.is_pawn_promotion and self.promoted_piece is not None
@@ -148,8 +173,8 @@ class Move:
             piece
             + self.row_col_notation
             + capture
-            + self.col_to_file[self.end_pos[1]]
-            + str(self.row_to_rank[self.end_pos[0]])
+            + col_to_file[self.end_pos[1]]
+            + str(row_to_rank[self.end_pos[0]])
             + promotion
         )
 
@@ -179,3 +204,129 @@ class Move:
 
     def __ne__(self, other: Move) -> bool:
         return not self == other
+
+    @staticmethod
+    def set_row_col_move_notation(
+        move: Move,
+        board_state: list[list[str]],
+        turn_to_move: str,
+        castle_rights: dict[str, bool],
+        king_pos: tuple[int, int],
+        last_move: Move | None,
+    ) -> str:
+
+        from ..logics import get_possible_moves, is_valid
+
+        row_col_notation: str = ""
+        move_list: list[Move] = []
+        row_flag: bool = False
+        col_flag: bool = False
+
+        if move.moved_piece[1] in ["P", "K"]:
+            return row_col_notation
+
+        for row in range(8):
+            for col in range(8):
+
+                if (
+                    board_state[row][col] == move.moved_piece
+                    and (row, col) != move.start_pos
+                ):
+
+                    moves_to_check = get_possible_moves(
+                        board_state,
+                        (row, col),
+                        turn_to_move,
+                        last_move,
+                        castle_rights,
+                    )
+                    for check_move in moves_to_check:
+                        if move.end_pos == check_move.end_pos and is_valid(
+                            board_state,
+                            check_move,
+                            turn_to_move,
+                            king_pos,
+                        ):
+                            move_list.append(check_move)
+
+        for check_move in move_list:
+            if col_flag is False and move.start_pos[0] == check_move.start_pos[0]:
+                col_flag = True
+            if row_flag is False and move.start_pos[1] == check_move.start_pos[1]:
+                row_flag = True
+
+            if row_flag and col_flag:
+                break
+
+        if col_flag:
+            row_col_notation = col_to_file[move.start_pos[1]]
+
+        if row_flag:
+            row_col_notation += str(row_to_rank[move.start_pos[0]])
+
+        return row_col_notation
+
+    @staticmethod
+    def from_notation(
+        notation: str,
+        board_state: list[list[str]],
+        turn_to_move: str,
+        last_move: Move | None,
+        castle_rights: dict[str, bool],
+        king_pos: tuple[int, int],
+    ) -> Move | None:
+
+        from ..logics import get_possible_moves
+
+        piece = (
+            f"{turn_to_move}{notation[0]}"
+            if notation[0] in ["K", "Q", "R", "B", "N"]
+            else f"{turn_to_move}P"
+        )
+
+        move_notation = notation if notation[-1] != "+" else notation[:-1]
+
+        for row in range(8):
+            for col in range(8):
+                move_list = get_possible_moves(
+                    board_state,
+                    (row, col),
+                    turn_to_move,
+                    last_move,
+                    castle_rights,
+                    piece,
+                )
+
+                for move in move_list:
+                    move.row_col_notation = Move.set_row_col_move_notation(
+                        move,
+                        board_state,
+                        turn_to_move,
+                        castle_rights,
+                        king_pos,
+                        last_move,
+                    )
+
+                    if move.notation == move_notation:
+                        return move
+        return None
+
+        # )
+        # capture = False
+        # if "x" in notation:
+        #     end_pos_notation = notation[notation.find("x") + 1 : notation.find("x") + 3]
+        #     capture = True
+        #
+        # elif piece[1] == "P":
+        #     end_pos_notation = notation[0:2]
+        #
+        # else:
+        #     if notation[-1] == "+":
+        #         end_pos_notation = notation[-3:-1]
+        #     else:
+        #         end_pos_notation = notation[-2:]
+        #
+        # if piece[1] == "P" and notation[0].islower():
+        #     start_col = file_to_col[notation[0]]
+        #     for b_row in range(8):
+        #         if board_state[b_row][start_col] == piece

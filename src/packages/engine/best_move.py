@@ -48,9 +48,9 @@ def get_best_move(
     for move in valid_moves:
 
         move_eval = get_move_evaluation(
+            move,
             board_state,
             turn_to_move,
-            move,
             king_pos,
             castle_rights,
             opponent_king_pos,

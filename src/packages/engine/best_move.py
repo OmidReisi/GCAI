@@ -1,8 +1,6 @@
-from .engine_move import make_move, get_switched_turn
 from .move_evaluation import get_move_evaluation
 from .random_move import get_random_move
 from ..move import Move
-from ..logics import get_valid_moves, possition_under_attack
 
 
 def get_best_move(
@@ -17,11 +15,11 @@ def get_best_move(
     opening_index: int,
     last_move: Move | None,
     depth: int,
-) -> Move | None:
+) -> tuple[Move | None, bool]:
 
     best_moves: list[Move] = []
 
-    min_max_eval = 1000 if turn_to_move == "b" else -1000
+    min_max_eval = float("inf") if turn_to_move == "b" else -float("inf")
 
     if len(valid_moves) == 0:
         return None
@@ -45,6 +43,9 @@ def get_best_move(
             return get_random_move(move_list, True)
         print("error no opening move")
 
+    alpha = -float("inf")
+    beta = float("inf")
+
     for move in valid_moves:
 
         move_eval = get_move_evaluation(
@@ -55,16 +56,21 @@ def get_best_move(
             castle_rights,
             opponent_king_pos,
             opponent_castle_rights,
-            depth,
+            alpha,
+            beta,
+            depth - 1,
         )
-        if turn_to_move == "b" and move_eval < min_max_eval:
-            best_moves = [move]
-            min_max_eval = move_eval
-        elif turn_to_move == "w" and move_eval > min_max_eval:
-            best_moves = [move]
-            min_max_eval = move_eval
+        alpha = move_eval[1]
+        beta = move_eval[2]
 
-        elif move_eval == min_max_eval:
+        if turn_to_move == "b" and move_eval[0] < min_max_eval:
+            best_moves = [move]
+            min_max_eval = move_eval[0]
+        elif turn_to_move == "w" and move_eval[0] > min_max_eval:
+            best_moves = [move]
+            min_max_eval = move_eval[0]
+
+        elif move_eval[0] == min_max_eval:
             best_moves.append(move)
 
     return get_random_move(best_moves, False)

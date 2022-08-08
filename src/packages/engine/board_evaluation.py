@@ -51,14 +51,14 @@ def get_minimax_evaluation(
     alpha: float,
     beta: float,
     depth: float,
-) -> float:
+) -> tuple[float, float, float]:
 
     current_board_eval = get_board_evaluation(
         board_state, turn_to_move, king_pos, castle_rights, last_move
     )
 
     if depth == 0 or current_board_eval[1]:
-        return current_board_eval[0]
+        return (current_board_eval[0] * depth, alpha, beta)
 
     opponent_turn = get_switched_turn(turn_to_move)
 
@@ -85,11 +85,11 @@ def get_minimax_evaluation(
                 beta,
                 depth - 1,
             )
-            max_eval = max(max_eval, board_eval)
-            alpha = max(alpha, board_eval)
+            max_eval = max(max_eval, board_eval[0])
+            alpha = max(alpha, board_eval[0])
             if beta <= alpha:
                 break
-        return max_eval
+        return (max_eval, alpha, beta)
 
     if turn_to_move == "b":
         min_eval = float("inf")
@@ -110,8 +110,8 @@ def get_minimax_evaluation(
                 beta,
                 depth - 1,
             )
-            min_eval = min(min_eval, board_eval)
-            beta = min(beta, board_eval)
+            min_eval = min(min_eval, board_eval[0])
+            beta = min(beta, board_eval[0])
             if beta <= alpha:
                 break
-        return min_eval
+        return (min_eval, alpha, beta)

@@ -64,7 +64,7 @@ class Board:
             (self.rows * self.cell_size, self.cols * self.cell_size)
         )
 
-        self.help_window_active: bool = False
+        self.game_pause: bool = False
 
         # initial_state of the board and how the pieces are set up. ("__" shows the empty cells)
         self.initial_state: list[list[str]] = [
@@ -148,8 +148,11 @@ class Board:
         self.selected_cell: tuple[int, int] | None = None
         self.selected_piece: tuple[int, int] | None = None
 
-        with open(r"./packages/utils/openings_list.json", "r") as data_file:
-            self.openings: list[dict[str, str | list[Move]]] = json.load(data_file)
+        with open(r"./packages/utils/openings_list.json", "r") as openings_data_file:
+            self.initial_openings: list[dict[str, str | list[str]]] = json.load(
+                openings_data_file
+            )
+        self.openings: list[dict[str, str | list[str]]] = self.initial_openings
 
         pygame.display.set_caption("Chess Game")
 
@@ -223,7 +226,7 @@ class Board:
         self.turn_to_move = "w" if self.turn_to_move == "b" else "b"
 
     def switch_view(self) -> None:
-        if self.help_window_active:
+        if self.game_pause:
             return
 
         self.view = "w" if self.view == "b" else "b"
@@ -479,7 +482,7 @@ class Board:
             self.selected_piece = None
 
     def undo_move(self) -> None:
-        if self.help_window_active:
+        if self.game_pause:
             return
 
         self.new_move = True
@@ -546,7 +549,7 @@ class Board:
         self.openings = [opening.copy() for opening in remaining_openings]
 
     def update_board_state(self):
-        if self.help_window_active:
+        if self.game_pause:
             return
         self.set_selected_piece()
         if self.players[self.turn_to_move] == "Human":
@@ -582,7 +585,7 @@ class Board:
                 self.openings,
                 len(self.move_log),
                 self.get_last_move(),
-                2,
+                3,
             )
             if move_to_make[1]:
                 pygame.time.delay(200)
@@ -864,7 +867,7 @@ class Board:
         Returns:
             None:
         """
-        if not self.help_window_active:
+        if not self.game_pause:
             self.draw_board()
             self.highlight_last_move()
             self.highlight_cell()
@@ -1093,7 +1096,7 @@ class Board:
                 return
 
     def reset_board(self) -> None:
-        if self.help_window_active:
+        if self.game_pause:
             return
 
         self.board_state = self.initial_state
@@ -1117,7 +1120,6 @@ class Board:
         self.game_type = None
         self.players = None
 
-        with open(r"./packages/utils/openings_list.json", "r") as data_file:
-            self.openings: list[dict[str, str | list[str]]] = json.load(data_file)
+        self.openings = self.initial_openings
 
         self.set_game_type()

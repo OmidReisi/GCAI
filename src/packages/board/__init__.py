@@ -152,7 +152,9 @@ class Board:
             self.initial_openings: list[dict[str, str | list[str]]] = json.load(
                 openings_data_file
             )
-        self.openings: list[dict[str, str | list[str]]] = self.initial_openings
+        self.openings: list[dict[str, str | list[str]]] = [
+            opening.copy() for opening in self.initial_openings
+        ]
 
         pygame.display.set_caption("Chess Game")
 
@@ -1120,6 +1122,6 @@ class Board:
         self.game_type = None
         self.players = None
 
-        self.openings = self.initial_openings
+        self.openings = [opening.copy() for opening in self.initial_openings]
 
         self.set_game_type()

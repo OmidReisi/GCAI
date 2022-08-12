@@ -22,6 +22,7 @@ def get_best_move(
     min_max_eval = float("inf") if turn_to_move == "b" else -float("inf")
 
     if len(valid_moves) == 0:
+        print("no valid move")
         return None
 
     if len(openings) != 0:
@@ -60,6 +61,17 @@ def get_best_move(
             beta,
             depth - 1,
         )
+
+        # if turn_to_move == "b" and move_eval < min_max_eval:
+        #     best_moves = [move]
+        #     min_max_eval = move_eval
+        # elif turn_to_move == "w" and move_eval > min_max_eval:
+        #     best_moves = [move]
+        #     min_max_eval = move_eval
+        #
+        # elif move_eval == min_max_eval:
+        #     best_moves.append(move)
+
         alpha = move_eval[1]
         beta = move_eval[2]
 

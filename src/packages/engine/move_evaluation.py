@@ -4,7 +4,7 @@ from ..move import Move
 
 
 def get_move_evaluation(
-    move_to_make: Move,
+    move: Move,
     board_state: list[list[str]],
     turn_to_move: str,
     king_pos: tuple[int, int],
@@ -15,13 +15,13 @@ def get_move_evaluation(
     beta: float,
     depth: int,
 ) -> tuple[float, float, float]:
-    generated_board_state = make_move(board_state, turn_to_move, move_to_make)
+    generated_board_state = make_move(board_state, turn_to_move, move)
 
-    if move_to_make.is_castle:
-        move_to_make.update_end_pos()
+    if move.is_castle:
+        move.update_end_pos()
 
-    king_pos = get_king_pos(move_to_make, king_pos)
-    temp_castle_rights = get_castle_rights(move_to_make, castle_rights)
+    king_pos = get_king_pos(move, king_pos)
+    temp_castle_rights = get_castle_rights(move, castle_rights)
 
     return get_minimax_evaluation(
         generated_board_state,
@@ -30,7 +30,7 @@ def get_move_evaluation(
         opponent_castle_rights,
         king_pos,
         temp_castle_rights,
-        move_to_make,
+        move,
         alpha,
         beta,
         depth,

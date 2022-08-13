@@ -6,6 +6,7 @@ from ..logics import (
     is_valid,
     any_valid_moves,
     get_valid_moves,
+    get_en_passant,
 )
 from ..engine import (
     get_best_move,
@@ -66,8 +67,6 @@ class Board:
 
         self.game_pause: bool = False
 
-        # initial_state of the board and how the pieces are set up. ("__" shows the empty cells)
-
         self.pieces: list[str] = [
             "wP",
             "wN",
@@ -92,6 +91,9 @@ class Board:
             ["wP", "wP", "wP", "wP", "wP", "wP", "wP", "wP"],
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"],
         ]
+
+        self.board_hash: int = 0
+        self.board_hash_list: list[int] = []
 
         self.game_type: int | None = None
         self.players: dict[str, str] | None = None
@@ -146,12 +148,33 @@ class Board:
         self.selected_cell: tuple[int, int] | None = None
         self.selected_piece: tuple[int, int] | None = None
 
+        with open(r"./packages/utils/zobrist_hash_keys.json", "r") as zobrist_hash_file:
+            self.zobrist_hash_keys: dict[str, int] = json.load(zobrist_hash_file)
+
         with open(r"./packages/utils/openings_list.json", "r") as openings_data_file:
             self.openings: list[dict[str, str | list[str]]] = json.load(
                 openings_data_file
             )
+        self.initialize_board_hash()
 
         pygame.display.set_caption("Chess Game")
+
+    def initialize_board_hash(self):
+
+        for row in range(8):
+            for col in range(8):
+                piece = self.board_state[row][col]
+                if piece != "__":
+                    self.board_hash = (
+                        self.board_hash
+                        ^ self.zobrist_hash_keys[f"{piece}_({row},{col})"]
+                    )
+
+        for piece in ["wK", "wQ", "bK", "bQ"]:
+            self.board_hash = (
+                self.board_hash ^ self.zobrist_hash_keys[f"{piece}_castle_rights"]
+            )
+        self.board_hash_list.append(self.board_hash)
 
     def load_piece_images(self) -> None:
         """creating a Surface Image for each piece and scalling them to the size of the cells on the board.
@@ -265,16 +288,21 @@ class Board:
             self.draw_status = True
             self.draw_status_type = "50 move rule"
             return
-        if len(self.move_log) >= 6:
-            move_log = self.move_log[-8:]
-            if (
-                move_log[0] == move_log[4]
-                and move_log[1] == move_log[5]
-                and move_log[2] == move_log[6]
-                and move_log[3] == move_log[7]
-            ):
-                self.draw_status = True
-                self.draw_status_type = "Repetition"
+        # if len(self.move_log) >= 6:
+        #     move_log = self.move_log[-8:]
+        #     if (
+        #         move_log[0] == move_log[4]
+        #         and move_log[1] == move_log[5]
+        #         and move_log[2] == move_log[6]
+        #         and move_log[3] == move_log[7]
+        #     ):
+        #         self.draw_status = True
+        #         self.draw_status_type = "Repetition"
+
+        if self.board_hash_list.count(self.board_hash) >= 3:
+
+            self.draw_status = True
+            self.draw_status_type = "Repetition"
 
         for row in range(8):
             for col in range(8):
@@ -472,6 +500,7 @@ class Board:
                         move.opening_name = self.move_log[-1].opening_name
 
                     self.update_move_log(move)
+                    self.update_board_hash(self.get_last_move())
                     self.new_move = True
                     self.update_openings()
 
@@ -484,6 +513,9 @@ class Board:
 
         self.new_move = True
         if self.move_log:
+
+            self.board_hash = self.board_hash_list.pop()
+
             move = self.move_log.pop()
             self.checkmate = False
             self.stalemate = False
@@ -527,6 +559,95 @@ class Board:
     def get_file_rank(self, pos: tuple[int, int]) -> str:
 
         return f"{self.col_to_file[pos[1]]}{self.row_to_rank[pos[0]]}"
+
+    def update_board_hash(self, move: Move | None):
+        if move is None:
+            return
+        s_row, s_col = move.start_pos
+        self.board_hash = (
+            self.board_hash
+            ^ self.zobrist_hash_keys[f"{move.moved_piece}_({s_row},{s_col})"]
+        )
+
+        e_row, e_col = move.end_pos
+        if move.captured_piece != "__":
+            self.board_hash = (
+                self.board_hash
+                ^ self.zobrist_hash_keys[f"{move.captured_piece}_({e_row},{e_col})"]
+            )
+        elif move.is_en_passant:
+            p_row, p_col = move.en_passant_pos
+            piece = "wP" if move.moved_piece[0] == "b" else "bP"
+            self.board_hash = (
+                self.board_hash ^ self.zobrist_hash_keys[f"{piece}_({p_row},{p_col})"]
+            )
+            self.board_hash = (
+                self.board_hash ^ self.zobrist_hash_keys[f"en_passant_file_{p_col}"]
+            )
+        elif move.is_castle:
+            castle_type = move.get_castle_type()
+            side = move.moved_piece[0]
+
+            if castle_type == "short" and side == "w":
+                s_row, s_col = (7, 7)
+                e_row, e_col = (7, 5)
+                self.board_hash = (
+                    self.board_hash ^ self.zobrist_hash_keys["wK_castle_rights"]
+                )
+
+            elif castle_type == "long" and side == "w":
+                s_row, s_col = (7, 0)
+                e_row, e_col = (7, 3)
+                self.board_hash = (
+                    self.board_hash ^ self.zobrist_hash_keys["wQ_castle_rights"]
+                )
+
+            elif castle_type == "short" and side == "b":
+                s_row, s_col = (0, 0)
+                e_row, e_col = (0, 5)
+                self.board_hash = (
+                    self.board_hash ^ self.zobrist_hash_keys["bK_castle_rights"]
+                )
+
+            elif castle_type == "long" and side == "b":
+                s_row, s_col = (0, 0)
+                e_row, e_col = (0, 3)
+                self.board_hash = (
+                    self.board_hash ^ self.zobrist_hash_keys["bQ_castle_rights"]
+                )
+            else:
+                raise ValueError
+
+            self.board_hash = (
+                self.board_hash ^ self.zobrist_hash_keys[f"{side}R_({s_row},{s_col})"]
+            )
+            self.board_hash = (
+                self.board_hash ^ self.zobrist_hash_keys[f"{side}R_({e_row},{e_col})"]
+            )
+        e_row, e_col = move.end_pos
+        self.board_hash = (
+            self.board_hash
+            ^ self.zobrist_hash_keys[f"{move.moved_piece}_({e_row},{e_col})"]
+        )
+        if move.is_two_square_pawn_move():
+            opponent_side = "w" if move.moved_piece[0] == "b" else "b"
+            if e_col - 1 in range(8):
+                if self.board_state[e_row][e_col - 1] == f"{opponent_side}P":
+
+                    self.board_hash = (
+                        self.board_hash
+                        ^ self.zobrist_hash_keys[f"en_passant_file_{e_col - 1}"]
+                    )
+            if e_col + 1 in range(8):
+                if self.board_state[e_row][e_col + 1] == f"{opponent_side}P":
+
+                    self.board_hash = (
+                        self.board_hash
+                        ^ self.zobrist_hash_keys[f"en_passant_file_{e_col + 1}"]
+                    )
+
+        self.board_hash = self.board_hash ^ self.zobrist_hash_keys["black_to_move"]
+        self.board_hash_list.append(self.board_hash)
 
     def update_move_log(self, move: Move) -> None:
         self.move_log.append(move)

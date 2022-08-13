@@ -44,9 +44,6 @@ def get_best_move(
             return get_random_move(move_list, True)
         print("error no opening move")
 
-    alpha = -float("inf")
-    beta = float("inf")
-
     for move in valid_moves:
 
         move_eval = get_move_evaluation(
@@ -57,32 +54,17 @@ def get_best_move(
             castle_rights,
             opponent_king_pos,
             opponent_castle_rights,
-            alpha,
-            beta,
-            depth - 1,
+            depth,
         )
 
-        # if turn_to_move == "b" and move_eval < min_max_eval:
-        #     best_moves = [move]
-        #     min_max_eval = move_eval
-        # elif turn_to_move == "w" and move_eval > min_max_eval:
-        #     best_moves = [move]
-        #     min_max_eval = move_eval
-        #
-        # elif move_eval == min_max_eval:
-        #     best_moves.append(move)
-
-        alpha = move_eval[1]
-        beta = move_eval[2]
-
-        if turn_to_move == "b" and move_eval[0] < min_max_eval:
+        if turn_to_move == "b" and move_eval < min_max_eval:
             best_moves = [move]
-            min_max_eval = move_eval[0]
-        elif turn_to_move == "w" and move_eval[0] > min_max_eval:
+            min_max_eval = move_eval
+        elif turn_to_move == "w" and move_eval > min_max_eval:
             best_moves = [move]
-            min_max_eval = move_eval[0]
+            min_max_eval = move_eval
 
-        elif move_eval[0] == min_max_eval:
+        elif move_eval == min_max_eval:
             best_moves.append(move)
 
     return get_random_move(best_moves, False)

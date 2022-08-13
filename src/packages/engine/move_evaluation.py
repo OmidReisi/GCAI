@@ -11,10 +11,9 @@ def get_move_evaluation(
     castle_rights: dict[str, bool],
     opponent_king_pos: tuple[int, int],
     opponent_castle_rights: dict[str, bool],
-    alpha: float,
-    beta: float,
     depth: int,
-) -> tuple[float, float, float]:
+) -> float:
+
     generated_board_state = make_move(board_state, turn_to_move, move)
 
     if move.is_castle:
@@ -31,7 +30,7 @@ def get_move_evaluation(
         king_pos,
         temp_castle_rights,
         move,
-        alpha,
-        beta,
+        -float("inf"),
+        float("inf"),
         depth,
     )

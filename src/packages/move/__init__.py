@@ -78,9 +78,11 @@ class Move:
 
         if self.moved_piece == "wP" and self.end_pos[0] == 0:
             self.is_pawn_promotion = True
+            self.promoted_piece = "wQ"
 
         if self.moved_piece == "bP" and self.end_pos[0] == 7:
             self.is_pawn_promotion = True
+            self.promoted_piece = "bQ"
 
         self.opening_name: str | None = None
 

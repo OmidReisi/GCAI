@@ -2,6 +2,8 @@ from ..move import Move
 from ..logics import any_valid_moves, get_valid_moves, possition_under_attack
 from .engine_move import get_switched_turn, get_castle_rights, get_king_pos, make_move
 from .square_evaluation import get_piece_square_evaluation
+from .move_order_list import get_move_order_list
+from ..utils.piece_square_tables import piece_evaluation
 
 
 def get_game_stage(board_state: list[list[str]]) -> str:
@@ -72,11 +74,12 @@ def get_board_evaluation(
     king_pos: tuple[int, int],
     castle_rights: dict[str, bool],
     last_move: Move | None,
-) -> tuple[float, bool]:
+) -> tuple[float, str, bool]:
 
     checkmate_index = -1 if turn_to_move == "w" else 1
 
     check: bool = False
+    game_stage = get_game_stage(board_state)
 
     if possition_under_attack(board_state, king_pos, turn_to_move):
         check = True
@@ -85,21 +88,12 @@ def get_board_evaluation(
         board_state, turn_to_move, king_pos, last_move, castle_rights
     ):
         if check:
-            return (1000 * checkmate_index, True)
+            return (1000 * checkmate_index, game_stage, True)
 
-        return (0, True)
+        return (0, game_stage, True)
 
-    piece_evaluation: dict[str, float] = {
-        "K": 20,
-        "Q": 9,
-        "R": 5,
-        "B": 3.3,
-        "N": 3.2,
-        "P": 1,
-    }
     evaluation: float = 0
     square_index = 0
-    game_stage = get_game_stage(board_state)
 
     if check:
         evaluation += checkmate_index * 0.1
@@ -118,7 +112,7 @@ def get_board_evaluation(
                     piece[1]
                 ] + get_piece_square_evaluation(piece, game_stage, (row, col))
 
-    return (evaluation, False)
+    return (evaluation, game_stage, False)
 
 
 def get_minimax_evaluation(
@@ -132,19 +126,27 @@ def get_minimax_evaluation(
     alpha: float,
     beta: float,
     depth: float,
-) -> tuple[float, float, float]:
+) -> float:
 
     current_board_eval = get_board_evaluation(
         board_state, turn_to_move, king_pos, castle_rights, last_move
     )
 
-    if depth == 0 or current_board_eval[1]:
-        return (current_board_eval[0] * depth, alpha, beta)
+    game_stage = current_board_eval[1]
+
+    if depth == 0 or current_board_eval[2]:
+        if current_board_eval[2]:
+            return current_board_eval[0] * (depth + 1)
+        return current_board_eval[0]
 
     opponent_turn = get_switched_turn(turn_to_move)
 
     valid_moves = get_valid_moves(
         board_state, turn_to_move, king_pos, castle_rights, last_move
+    )
+
+    valid_moves = get_move_order_list(
+        valid_moves, turn_to_move, game_stage, current_board_eval[0]
     )
 
     if turn_to_move == "w":
@@ -166,11 +168,11 @@ def get_minimax_evaluation(
                 beta,
                 depth - 1,
             )
-            max_eval = max(max_eval, board_eval[0])
-            alpha = max(alpha, board_eval[0])
+            max_eval = max(max_eval, board_eval)
+            alpha = max(alpha, board_eval)
             if beta <= alpha:
                 break
-        return (max_eval, alpha, beta)
+        return max_eval
 
     if turn_to_move == "b":
         min_eval = float("inf")
@@ -191,8 +193,8 @@ def get_minimax_evaluation(
                 beta,
                 depth - 1,
             )
-            min_eval = min(min_eval, board_eval[0])
-            beta = min(beta, board_eval[0])
+            min_eval = min(min_eval, board_eval)
+            beta = min(beta, board_eval)
             if beta <= alpha:
                 break
-        return (min_eval, alpha, beta)
+        return min_eval

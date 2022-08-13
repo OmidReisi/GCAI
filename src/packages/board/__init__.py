@@ -67,16 +67,6 @@ class Board:
         self.game_pause: bool = False
 
         # initial_state of the board and how the pieces are set up. ("__" shows the empty cells)
-        self.initial_state: list[list[str]] = [
-            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
-            ["bP", "bP", "bP", "bP", "bP", "bP", "bP", "bP"],
-            ["__", "__", "__", "__", "__", "__", "__", "__"],
-            ["__", "__", "__", "__", "__", "__", "__", "__"],
-            ["__", "__", "__", "__", "__", "__", "__", "__"],
-            ["__", "__", "__", "__", "__", "__", "__", "__"],
-            ["wP", "wP", "wP", "wP", "wP", "wP", "wP", "wP"],
-            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"],
-        ]
 
         self.pieces: list[str] = [
             "wP",
@@ -92,8 +82,16 @@ class Board:
             "bQ",
             "bK",
         ]
-
-        self.board_state: list[list[str]] = self.initial_state
+        self.board_state: list[list[str]] = [
+            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
+            ["bP", "bP", "bP", "bP", "bP", "bP", "bP", "bP"],
+            ["__", "__", "__", "__", "__", "__", "__", "__"],
+            ["__", "__", "__", "__", "__", "__", "__", "__"],
+            ["__", "__", "__", "__", "__", "__", "__", "__"],
+            ["__", "__", "__", "__", "__", "__", "__", "__"],
+            ["wP", "wP", "wP", "wP", "wP", "wP", "wP", "wP"],
+            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"],
+        ]
 
         self.game_type: int | None = None
         self.players: dict[str, str] | None = None
@@ -149,12 +147,9 @@ class Board:
         self.selected_piece: tuple[int, int] | None = None
 
         with open(r"./packages/utils/openings_list.json", "r") as openings_data_file:
-            self.initial_openings: list[dict[str, str | list[str]]] = json.load(
+            self.openings: list[dict[str, str | list[str]]] = json.load(
                 openings_data_file
             )
-        self.openings: list[dict[str, str | list[str]]] = [
-            opening.copy() for opening in self.initial_openings
-        ]
 
         pygame.display.set_caption("Chess Game")
 
@@ -1101,7 +1096,17 @@ class Board:
         if self.game_pause:
             return
 
-        self.board_state = self.initial_state
+        self.board_state: list[list[str]] = [
+            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
+            ["bP", "bP", "bP", "bP", "bP", "bP", "bP", "bP"],
+            ["__", "__", "__", "__", "__", "__", "__", "__"],
+            ["__", "__", "__", "__", "__", "__", "__", "__"],
+            ["__", "__", "__", "__", "__", "__", "__", "__"],
+            ["__", "__", "__", "__", "__", "__", "__", "__"],
+            ["wP", "wP", "wP", "wP", "wP", "wP", "wP", "wP"],
+            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"],
+        ]
+
         self.turn_to_move = "w"
         self.view = "w"
         self.king_possitions = {"w": (7, 4), "b": (0, 4)}
@@ -1122,6 +1127,9 @@ class Board:
         self.game_type = None
         self.players = None
 
-        self.openings = [opening.copy() for opening in self.initial_openings]
+        with open(r"./packages/utils/openings_list.json", "r") as openings_data_file:
+            self.openings: list[dict[str, str | list[str]]] = json.load(
+                openings_data_file
+            )
 
         self.set_game_type()

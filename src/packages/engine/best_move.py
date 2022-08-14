@@ -6,6 +6,7 @@ from ..move import Move
 def get_best_move(
     valid_moves: list[Move],
     board_state: list[list[str]],
+    board_hash: float,
     turn_to_move: str,
     king_pos: tuple[int, int],
     castle_rights: dict[str, bool],
@@ -14,6 +15,8 @@ def get_best_move(
     openings: list[dict[str, str | list[str]]],
     opening_index: int,
     last_move: Move | None,
+    zobrist_hash_keys: dict[str, int],
+    hash_table: dict[str, float],
     depth: int,
 ) -> tuple[Move | None, bool]:
 
@@ -49,11 +52,14 @@ def get_best_move(
         move_eval = get_move_evaluation(
             move,
             board_state,
+            board_hash,
             turn_to_move,
             king_pos,
             castle_rights,
             opponent_king_pos,
             opponent_castle_rights,
+            zobrist_hash_keys,
+            hash_table,
             depth,
         )
 

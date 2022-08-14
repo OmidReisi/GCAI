@@ -38,6 +38,12 @@ def get_move_order_list(
             ] + get_piece_square_evaluation(
                 move.captured_piece, game_stage, move.end_pos
             )
+            if (
+                piece_evaluation[move.moved_piece[1]]
+                - piece_evaluation[move.captured_piece[1]]
+                < 0.5
+            ):
+                capture_score += evaluation_index
 
         move_eval = board_eval - start_pos_score + end_pos_score + capture_score
 

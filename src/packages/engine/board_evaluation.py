@@ -3,6 +3,7 @@ from ..logics import any_valid_moves, get_valid_moves, possition_under_attack
 from .engine_move import get_switched_turn, get_castle_rights, get_king_pos, make_move
 from .square_evaluation import get_piece_square_evaluation
 from .move_order_list import get_move_order_list
+from .king_safty_evaluation import get_king_safty_eval
 from ..utils.piece_square_tables import piece_evaluation
 
 
@@ -61,6 +62,7 @@ def get_game_stage(board_state: list[list[str]]) -> str:
         and white_minor_pieces_count == 0
         and black_minor_pieces_count == 0
     ):
+
         return "end game"
     if wQ_count == 0 and bQ_count == 0 and wR_count == 0 and bR_count == 0:
         return "end game"
@@ -77,6 +79,8 @@ def get_board_evaluation(
 ) -> tuple[float, str, bool]:
 
     checkmate_index = -1 if turn_to_move == "w" else 1
+    w_king_pos: tuple[int, int] | None = None
+    b_king_pos: tuple[int, int] | None = None
 
     check: bool = False
     game_stage = get_game_stage(board_state)
@@ -96,11 +100,15 @@ def get_board_evaluation(
     square_index = 0
 
     if check:
-        evaluation += checkmate_index * 0.1
+        evaluation += checkmate_index * 0.3
 
     for row in range(8):
         for col in range(8):
             piece = board_state[row][col]
+            if piece == "wK":
+                w_king_pos = (row, col)
+            elif piece == "bK":
+                b_king_pos = (row, col)
             if piece[0] == "w":
                 square_index = 1
                 evaluation += square_index * piece_evaluation[
@@ -111,6 +119,9 @@ def get_board_evaluation(
                 evaluation += square_index * piece_evaluation[
                     piece[1]
                 ] + get_piece_square_evaluation(piece, game_stage, (row, col))
+    evaluation += get_king_safty_eval(
+        board_state, "w", w_king_pos
+    ) + get_king_safty_eval(board_state, "b", b_king_pos)
 
     return (evaluation, game_stage, False)
 
@@ -129,7 +140,11 @@ def get_minimax_evaluation(
 ) -> float:
 
     current_board_eval = get_board_evaluation(
-        board_state, turn_to_move, king_pos, castle_rights, last_move
+        board_state,
+        turn_to_move,
+        king_pos,
+        castle_rights,
+        last_move,
     )
 
     game_stage = current_board_eval[1]

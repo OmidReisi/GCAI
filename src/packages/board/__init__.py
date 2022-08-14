@@ -6,7 +6,6 @@ from ..logics import (
     is_valid,
     any_valid_moves,
     get_valid_moves,
-    get_en_passant,
 )
 from ..engine import (
     get_best_move,
@@ -148,18 +147,23 @@ class Board:
         self.selected_cell: tuple[int, int] | None = None
         self.selected_piece: tuple[int, int] | None = None
 
-        with open(r"./packages/utils/zobrist_hash_keys.json", "r") as zobrist_hash_file:
-            self.zobrist_hash_keys: dict[str, int] = json.load(zobrist_hash_file)
-
         with open(r"./packages/utils/openings_list.json", "r") as openings_data_file:
             self.openings: list[dict[str, str | list[str]]] = json.load(
                 openings_data_file
             )
+
+        with open(r"./packages/utils/zobrist_hash_keys.json", "r") as zobrist_hash_file:
+            self.zobrist_hash_keys: dict[str, int] = json.load(zobrist_hash_file)
+
+        with open(r"./packages/utils/transposition_table.json", "r") as hash_file:
+            self.transposition_table: dict[str, float] = json.load(hash_file)
+
         self.initialize_board_hash()
 
         pygame.display.set_caption("Chess Game")
 
     def initialize_board_hash(self):
+        self.board_hash = 0
 
         for row in range(8):
             for col in range(8):
@@ -174,7 +178,7 @@ class Board:
             self.board_hash = (
                 self.board_hash ^ self.zobrist_hash_keys[f"{piece}_castle_rights"]
             )
-        self.board_hash_list.append(self.board_hash)
+        self.board_hash_list = [self.board_hash]
 
     def load_piece_images(self) -> None:
         """creating a Surface Image for each piece and scalling them to the size of the cells on the board.
@@ -424,11 +428,15 @@ class Board:
 
                 temp_board_state[p_row][p_col] = "__"
                 s_row, s_col = move.end_pos
-                temp_board_state[s_row][s_col] = (
-                    self.pawn_promotion()
-                    if move.is_pawn_promotion
-                    else move.moved_piece
-                )
+
+                if move.is_pawn_promotion:
+                    if self.players[self.turn_to_move] == "Human":
+                        temp_board_state[s_row][s_col] = self.pawn_promotion()
+                    else:
+                        temp_board_state[s_row][s_col] = f"{self.turn_to_move}Q"
+                else:
+                    temp_board_state[s_row][s_col] = move.moved_piece
+
                 if move.is_pawn_promotion:
                     move.promoted_piece = temp_board_state[s_row][s_col]
 
@@ -514,7 +522,8 @@ class Board:
         self.new_move = True
         if self.move_log:
 
-            self.board_hash = self.board_hash_list.pop()
+            self.board_hash_list.pop()
+            self.board_hash = self.board_hash_list[-1]
 
             move = self.move_log.pop()
             self.checkmate = False
@@ -559,6 +568,10 @@ class Board:
     def get_file_rank(self, pos: tuple[int, int]) -> str:
 
         return f"{self.col_to_file[pos[1]]}{self.row_to_rank[pos[0]]}"
+
+    def update_transposition_table_file(self):
+        with open(r"./packages/utils/transposition_table.json", "w") as hash_file:
+            json.dump(self.transposition_table, hash_file, indent=2)
 
     def update_board_hash(self, move: Move | None):
         if move is None:
@@ -666,6 +679,18 @@ class Board:
 
         self.openings = [opening.copy() for opening in remaining_openings]
 
+    def get_move_depth(self) -> int:
+        number_of_pieces = 0
+        for row in range(8):
+            for col in range(8):
+                if self.board_state[row][col] != "__":
+                    number_of_pieces += 1
+        if number_of_pieces <= 5:
+            return 4
+        if number_of_pieces <= 13:
+            return 3
+        return 2
+
     def update_board_state(self):
         if self.game_pause:
             return
@@ -695,6 +720,7 @@ class Board:
                     self.get_last_move(),
                 ),
                 self.board_state,
+                self.board_hash,
                 self.turn_to_move,
                 self.king_possitions[self.turn_to_move],
                 self.castle_rights[self.turn_to_move],
@@ -703,10 +729,14 @@ class Board:
                 self.openings,
                 len(self.move_log),
                 self.get_last_move(),
-                3,
+                self.zobrist_hash_keys,
+                self.transposition_table,
+                self.get_move_depth(),
             )
             if move_to_make[1]:
                 pygame.time.delay(200)
+
+            self.update_transposition_table_file()
 
             self.make_move(
                 move_to_make[0],
@@ -1252,5 +1282,6 @@ class Board:
             self.openings: list[dict[str, str | list[str]]] = json.load(
                 openings_data_file
             )
+        self.initialize_board_hash()
 
         self.set_game_type()

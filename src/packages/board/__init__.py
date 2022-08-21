@@ -924,6 +924,10 @@ class Board:
         return piece
 
     def print_help(self) -> None:
+
+        if not self.game_pause:
+            return
+
         self.screen.fill(self.background_color)
 
         title_surface = self.text_font.render("Help Window", True, self.font_color)
@@ -957,11 +961,19 @@ class Board:
             midleft=(self.cell_size // 2, 5 * self.cell_size)
         )
 
+        notation_surface = self.text_font.render(
+            "n - show notation log", True, self.font_color
+        )
+        notation_rect = notation_surface.get_rect(
+            midleft=(self.cell_size // 2, 6 * self.cell_size)
+        )
+
         self.screen.blit(title_surface, title_rect)
         self.screen.blit(help_surface, help_rect)
         self.screen.blit(view_surface, view_rect)
         self.screen.blit(undo_surface, undo_rect)
         self.screen.blit(reset_surface, reset_rect)
+        self.screen.blit(notation_surface, notation_rect)
 
     def draw_game_results(self) -> None:
         if self.checkmate:
@@ -1023,14 +1035,100 @@ class Board:
             self.draw_pieces()
             self.draw_game_results()
 
-        else:
-            self.print_help()
+        # else:
+        #     self.print_help()
 
         pygame.display.update()
 
     def print_move_notations(self):
-        for move in self.move_log:
-            print(move.opening_name, " : ", move.notation)
+
+        if not self.game_pause:
+            return
+        if len(self.move_log) == 0:
+            self.game_pause = not self.game_pause
+            return
+
+        move_list: list[str] = []
+        move_count: int = 1
+        for i in range(1, len(self.move_log), 2):
+            move_list.append(
+                f"{move_count}. {self.move_log[i-1].get_symbols_notation()} {self.move_log[i].get_symbols_notation()}  "
+            )
+            move_count += 1
+        if len(self.move_log) % 2 != 0:
+            move_list.append(
+                f"{move_count}. {self.move_log[-1].get_symbols_notation()}  "
+            )
+
+        self.screen.fill(self.background_color)
+        opening_font: pygame.font.Font = pygame.font.Font(
+            r"../res/fonts/calibrib.ttf", 25
+        )
+        opening_surface = opening_font.render(
+            self.move_log[-1].opening_name, True, (0, 0, 0)
+        )
+        opening_rect = opening_surface.get_rect(
+            center=(self.cell_size * 4, self.cell_size // 2)
+        )
+        self.screen.blit(opening_surface, opening_rect)
+
+        initial_start_line_y = opening_rect.height + self.cell_size
+        initial_start_line_x = self.cell_size // 2
+
+        start_line_x = initial_start_line_x
+        start_line_y = initial_start_line_y
+
+        notation_font: pygame.font.Font = pygame.font.SysFont("times", 40)
+
+        pressed_key: int | None = None
+
+        while pressed_key is None:
+            event = pygame.event.wait()
+
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.KEYDOWN:
+                pressed_key = event.key
+
+                if pressed_key == pygame.K_n:
+                    self.game_pause = not self.game_pause
+                    return
+                if pressed_key == pygame.K_UP:
+                    initial_start_line_y += self.cell_size // 2
+                    opening_rect = opening_rect.move(0, self.cell_size // 2)
+
+                if pressed_key == pygame.K_DOWN:
+                    initial_start_line_y -= self.cell_size // 2
+                    opening_rect = opening_rect.move(0, -self.cell_size // 2)
+
+            start_line_x = initial_start_line_x
+            start_line_y = initial_start_line_y
+
+            self.screen.fill(self.background_color)
+
+            self.screen.blit(opening_surface, opening_rect)
+            for move in move_list:
+                move_surface = notation_font.render(
+                    move,
+                    True,
+                    (0, 0, 0),
+                )
+
+                if move_surface.get_width() + start_line_x > self.screen.get_width():
+                    start_line_x = self.cell_size // 2
+                    start_line_y += self.cell_size // 2
+
+                move_rect = move_surface.get_rect(midleft=(start_line_x, start_line_y))
+
+                self.screen.blit(move_surface, move_rect)
+
+                start_line_x += move_rect.width
+
+            pygame.display.update()
+
+            pressed_key = None
 
     def set_game_type(self):
 
@@ -1258,6 +1356,8 @@ class Board:
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"],
         ]
 
+        self.selected_cell = None
+        self.selected_piece = None
         self.turn_to_move = "w"
         self.view = "w"
         self.king_possitions = {"w": (7, 4), "b": (0, 4)}
@@ -1273,15 +1373,15 @@ class Board:
         self.stalemate = False
         self.draw_status = False
         self.draw_status_type = None
+        self.fifty_move_rule = 0
         self.move_log.clear()
+        self.new_move = True
 
         self.game_type = None
         self.players = None
 
         with open(r"./packages/utils/openings_list.json", "r") as openings_data_file:
-            self.openings: list[dict[str, str | list[str]]] = json.load(
-                openings_data_file
-            )
+            self.openings = json.load(openings_data_file)
         self.initialize_board_hash()
 
         self.set_game_type()

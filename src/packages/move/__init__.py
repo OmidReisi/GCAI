@@ -45,6 +45,22 @@ file_to_col: dict[str, int] = {
 }
 
 
+symbols_notation: dict[str, str] = {
+    "wK": "♔",
+    "wQ": "♕",
+    "wR": "♖",
+    "wB": "♗",
+    "wN": "♘",
+    "wP": "♙",
+    "bK": "♚",
+    "bQ": "♛",
+    "bR": "♜",
+    "bB": "♝",
+    "bN": "♞",
+    "bP": "♟",
+}
+
+
 class Move:
     def __init__(
         self,
@@ -182,6 +198,14 @@ class Move:
 
     def update_notation(self, notation_part: str) -> None:
         self.notation = self.get_notation() + notation_part
+
+    def get_symbols_notation(self):
+        if self.notation[0] in ["K", "Q", "R", "B", "N"]:
+            return (
+                symbols_notation[self.turn_to_move + self.notation[0]]
+                + self.notation[1:]
+            )
+        return self.notation
 
     def set_fifty_move_rule(self, previous_fifty_move_rule: int) -> None:
         if self.start_pos is None or self.end_pos is None:

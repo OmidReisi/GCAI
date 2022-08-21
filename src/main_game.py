@@ -41,9 +41,10 @@ def main() -> None:
                 if event.key == pygame.K_r:
                     board.reset_board()
                 if event.key == pygame.K_n:
+                    board.game_pause = not board.game_pause
                     board.print_move_notations()
                 if event.key == pygame.K_h:
-                    board.help_window_active = not board.help_window_active
+                    board.game_pause = not board.game_pause
                     board.print_help()
 
         clock.tick(60)

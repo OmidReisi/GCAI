@@ -2,12 +2,17 @@ from ..utils.piece_square_tables import piece_evaluation
 
 
 def get_king_safty_eval(
-    board_state: list[list[str]], king_side: str, king_pos: tuple[int, int] | None
-) -> float:
+    board_state: list[list[str]],
+    king_side: str,
+    king_pos: tuple[int, int] | None,
+    game_stage: str,
+) -> tuple[float, float]:
+
+    king_mobility: float = 0
 
     if king_pos is None:
         return 0
-
+    division_index = 100
     k_row, k_col = king_pos
     side_eval = 1 if king_side == "w" else -1
     king_eval: float = 0.0
@@ -19,9 +24,10 @@ def get_king_safty_eval(
                 if piece == "__":
                     king_eval += 0.005
                 elif piece[0] == king_side:
-                    king_eval += piece_evaluation[piece[1]] / 100
+                    king_eval += piece_evaluation[piece[1]] / division_index
                 else:
-                    king_eval -= piece_evaluation[piece[1]] / 100
+                    king_eval -= piece_evaluation[piece[1]] / division_index
+                    king_mobility -= piece_evaluation[piece[1]] * 0.05
 
     for row, col in [
         (k_row + 2, k_col - 2),
@@ -46,8 +52,9 @@ def get_king_safty_eval(
             if piece == "__":
                 king_eval += 0.001
             elif piece[0] == king_side:
-                king_eval += piece_evaluation[piece[1]] / 200
+                king_eval += piece_evaluation[piece[1]] / (division_index * 2)
             else:
-                king_eval -= piece_evaluation[piece[1]] / 200
+                king_eval -= piece_evaluation[piece[1]] / (division_index * 2)
+                king_mobility -= piece_evaluation[piece[1]] * 0.1
 
-    return king_eval * side_eval
+    return (king_eval * side_eval, king_mobility * side_eval)

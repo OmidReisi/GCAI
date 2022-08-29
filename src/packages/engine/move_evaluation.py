@@ -7,7 +7,7 @@ from ..move import Move
 def get_move_evaluation(
     move: Move,
     board_state: list[list[str]],
-    board_hash: float,
+    board_hash: int,
     turn_to_move: str,
     king_pos: tuple[int, int],
     castle_rights: dict[str, bool],
@@ -16,7 +16,7 @@ def get_move_evaluation(
     zobrist_hash_keys: dict[str, int],
     hash_table: dict[str, float],
     depth: int,
-) -> float:
+) -> tuple[float, int, Move]:
 
     generated_board_state = make_move(board_state, turn_to_move, move)
 
@@ -31,7 +31,7 @@ def get_move_evaluation(
     )
 
     if generated_hash in hash_table.keys():
-        return hash_table[generated_hash]
+        return (hash_table[generated_hash], generated_hash, move)
 
     move_eval = get_minimax_evaluation(
         generated_board_state,
@@ -46,5 +46,4 @@ def get_move_evaluation(
         depth,
     )
 
-    hash_table[generated_hash] = move_eval
-    return move_eval
+    return (move_eval, generated_hash, move)

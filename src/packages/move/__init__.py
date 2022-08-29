@@ -336,23 +336,3 @@ class Move:
                     if move.notation == move_notation:
                         return move
         return None
-
-        # )
-        # capture = False
-        # if "x" in notation:
-        #     end_pos_notation = notation[notation.find("x") + 1 : notation.find("x") + 3]
-        #     capture = True
-        #
-        # elif piece[1] == "P":
-        #     end_pos_notation = notation[0:2]
-        #
-        # else:
-        #     if notation[-1] == "+":
-        #         end_pos_notation = notation[-3:-1]
-        #     else:
-        #         end_pos_notation = notation[-2:]
-        #
-        # if piece[1] == "P" and notation[0].islower():
-        #     start_col = file_to_col[notation[0]]
-        #     for b_row in range(8):
-        #         if board_state[b_row][start_col] == piece

@@ -60,6 +60,30 @@ class Board:
         self.font_color: RGB_Color = font_color
         self.background_color: RGB_Color = background_color
 
+        self.capture_sound: pygame.mixer.Sound = pygame.mixer.Sound(
+            r"../res/sounds/capture.mp3"
+        )
+        self.castle_sound: pygame.mixer.Sound = pygame.mixer.Sound(
+            r"../res/sounds/castle.mp3"
+        )
+        self.check_sound: pygame.mixer.Sound = pygame.mixer.Sound(
+            r"../res/sounds/check.mp3"
+        )
+        self.game_end_sound: pygame.mixer.Sound = pygame.mixer.Sound(
+            r"../res/sounds/game_end.mp3"
+        )
+        self.game_start_sound: pygame.mixer.Sound = pygame.mixer.Sound(
+            r"../res/sounds/game_start.mp3"
+        )
+        self.promotion_sound: pygame.mixer.Sound = pygame.mixer.Sound(
+            r"../res/sounds/piece_move.mp3"
+        )
+        self.piece_move_sound: pygame.mixer.Sound = pygame.mixer.Sound(
+            r"../res/sounds/promotion.mp3"
+        )
+
+        self.play_game_over_sound: bool = True
+
         self.screen: pygame.surface.Surface = pygame.display.set_mode(
             (self.rows * self.cell_size, self.cols * self.cell_size)
         )
@@ -90,6 +114,17 @@ class Board:
             ["wP", "wP", "wP", "wP", "wP", "wP", "wP", "wP"],
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"],
         ]
+
+        # self.board_state: list[list[str]] = [
+        #     ["__", "__", "__", "__", "bK", "__", "__", "__"],
+        #     ["__", "__", "__", "__", "__", "__", "__", "__"],
+        #     ["__", "__", "__", "__", "__", "__", "__", "__"],
+        #     ["wQ", "__", "__", "__", "__", "__", "__", "__"],
+        #     ["__", "__", "__", "__", "__", "__", "__", "__"],
+        #     ["__", "__", "__", "__", "__", "__", "__", "__"],
+        #     ["__", "__", "__", "__", "__", "__", "__", "__"],
+        #     ["__", "__", "__", "__", "wK", "__", "__", "__"],
+        # ]
 
         self.board_hash: int = 0
         self.board_hash_list: list[int] = []
@@ -292,16 +327,6 @@ class Board:
             self.draw_status = True
             self.draw_status_type = "50 move rule"
             return
-        # if len(self.move_log) >= 6:
-        #     move_log = self.move_log[-8:]
-        #     if (
-        #         move_log[0] == move_log[4]
-        #         and move_log[1] == move_log[5]
-        #         and move_log[2] == move_log[6]
-        #         and move_log[3] == move_log[7]
-        #     ):
-        #         self.draw_status = True
-        #         self.draw_status_type = "Repetition"
 
         if self.board_hash_list.count(self.board_hash) >= 3:
 
@@ -399,7 +424,6 @@ class Board:
 
     def make_move(self, move: Move | None) -> None:
         if move is None:
-            print("move is None")
             return
 
         if (move.start_pos is not None and move.end_pos is not None) and (
@@ -508,9 +532,10 @@ class Board:
                         move.opening_name = self.move_log[-1].opening_name
 
                     self.update_move_log(move)
-                    self.update_board_hash(self.get_last_move())
+                    self.update_board_hash(move)
                     self.new_move = True
                     self.update_openings()
+                    self.move_sound(move, self.checks[self.turn_to_move])
 
             self.selected_cell = None
             self.selected_piece = None
@@ -564,10 +589,28 @@ class Board:
                 side: move.castle_rights[side].copy()
                 for side in move.castle_rights.keys()
             }
+            self.piece_move_sound.play()
+            self.play_game_over_sound = True
 
     def get_file_rank(self, pos: tuple[int, int]) -> str:
 
         return f"{self.col_to_file[pos[1]]}{self.row_to_rank[pos[0]]}"
+
+    def move_sound(self, move: Move, check: bool) -> None:
+        sound_effect: pygame.mixer.Sound | None = None
+
+        if check:
+            sound_effect = self.check_sound
+        elif move.is_pawn_promotion:
+            sound_effect = self.promotion_sound
+        elif move.captured_piece != "__" or move.is_en_passant:
+            sound_effect = self.capture_sound
+        elif move.is_castle:
+            sound_effect = self.castle_sound
+        else:
+            sound_effect = self.piece_move_sound
+
+        sound_effect.play()
 
     def update_transposition_table_file(self):
         with open(r"./packages/utils/transposition_table.json", "w") as hash_file:
@@ -583,12 +626,7 @@ class Board:
         )
 
         e_row, e_col = move.end_pos
-        if move.captured_piece != "__":
-            self.board_hash = (
-                self.board_hash
-                ^ self.zobrist_hash_keys[f"{move.captured_piece}_({e_row},{e_col})"]
-            )
-        elif move.is_en_passant:
+        if move.is_en_passant:
             p_row, p_col = move.en_passant_pos
             piece = "wP" if move.moved_piece[0] == "b" else "bP"
             self.board_hash = (
@@ -596,6 +634,11 @@ class Board:
             )
             self.board_hash = (
                 self.board_hash ^ self.zobrist_hash_keys[f"en_passant_file_{p_col}"]
+            )
+        elif move.captured_piece != "__":
+            self.board_hash = (
+                self.board_hash
+                ^ self.zobrist_hash_keys[f"{move.captured_piece}_({e_row},{e_col})"]
             )
         elif move.is_castle:
             castle_type = move.get_castle_type()
@@ -685,11 +728,9 @@ class Board:
             for col in range(8):
                 if self.board_state[row][col] != "__":
                     number_of_pieces += 1
-        if number_of_pieces <= 5:
+        if number_of_pieces <= 4:
             return 4
-        if number_of_pieces <= 13:
-            return 3
-        return 2
+        return 3
 
     def update_board_state(self):
         if self.game_pause:
@@ -709,7 +750,7 @@ class Board:
             and self.checkmate is False
             and self.draw_status is False
         ):
-            # pygame.time.delay(200)
+
             opponent = "w" if self.turn_to_move == "b" else "b"
             move_to_make = get_best_move(
                 get_valid_moves(
@@ -731,15 +772,16 @@ class Board:
                 self.get_last_move(),
                 self.zobrist_hash_keys,
                 self.transposition_table,
-                self.get_move_depth(),
+                self.board_hash_list,
+                self.fifty_move_rule,
+                3,
             )
-            if move_to_make[1]:
-                pygame.time.delay(200)
+            pygame.time.delay(200)
 
             self.update_transposition_table_file()
 
             self.make_move(
-                move_to_make[0],
+                move_to_make,
             )
         self.set_checkmate_stalemate()
         self.set_draw()
@@ -996,6 +1038,9 @@ class Board:
             )
             self.screen.blit(checkmate_surface_1, checkmate_rect_1)
             self.screen.blit(checkmate_surface_2, checkmate_rect_2)
+            if self.play_game_over_sound:
+                self.play_game_over_sound = False
+                self.game_end_sound.play()
             return
 
         if self.draw_status and self.draw_status_type is not None:
@@ -1017,6 +1062,9 @@ class Board:
             )
             self.screen.blit(draw_surface_1, draw_rect_1)
             self.screen.blit(draw_surface_2, draw_rect_2)
+            if self.play_game_over_sound:
+                self.play_game_over_sound = False
+                self.game_end_sound.play()
             return
 
     def draw(self) -> None:
@@ -1230,16 +1278,19 @@ class Board:
             if key == pygame.K_1 or (click and border_1_rect.collidepoint(mouse_pos)):
                 self.game_type = 1
                 self.players = {"w": "Human", "b": "Human"}
+                self.game_start_sound.play()
                 return
 
             if key == pygame.K_2 or (click and border_2_rect.collidepoint(mouse_pos)):
                 self.game_type = 2
                 self.players = {"w": "AI", "b": "AI"}
+                self.game_start_sound.play()
                 return
 
             if key == pygame.K_3 or (click and border_3_rect.collidepoint(mouse_pos)):
                 self.game_type = 3
                 self.set_players()
+                self.game_start_sound.play()
 
     def set_players(self):
 
@@ -1379,6 +1430,8 @@ class Board:
 
         self.game_type = None
         self.players = None
+
+        self.play_game_over_sound = True
 
         with open(r"./packages/utils/openings_list.json", "r") as openings_data_file:
             self.openings = json.load(openings_data_file)

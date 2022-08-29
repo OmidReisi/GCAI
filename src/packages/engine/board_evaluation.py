@@ -7,7 +7,7 @@ from .king_safty_evaluation import get_king_safty_eval
 from ..utils.piece_square_tables import piece_evaluation
 
 
-def get_game_stage(board_state: list[list[str]]) -> str:
+def get_game_stage(board_state: list[list[str]]) -> tuple[str, int]:
     wQ_count = 0
     bQ_count = 0
     wR_count = 0
@@ -35,6 +35,17 @@ def get_game_stage(board_state: list[list[str]]) -> str:
                 white_minor_pieces_count += 1
             elif board_state[row][col] in ["bB", "bN"]:
                 black_minor_pieces_count += 1
+    number_of_pieces = (
+        wQ_count
+        + wR_count
+        + white_minor_pieces_count
+        + wP_count
+        + bQ_count
+        + bR_count
+        + black_minor_pieces_count
+        + bP_count
+        + 2
+    )
     if (
         wQ_count <= 1
         and wP_count <= 3
@@ -45,7 +56,7 @@ def get_game_stage(board_state: list[list[str]]) -> str:
         and white_minor_pieces_count <= 1
         and black_minor_pieces_count <= 1
     ):
-        return "end game"
+        return ("end game", number_of_pieces)
     if (
         wQ_count == 0
         and bQ_count == 0
@@ -55,19 +66,19 @@ def get_game_stage(board_state: list[list[str]]) -> str:
         and black_minor_pieces_count <= 3
     ):
 
-        return "end game"
+        return ("end game", number_of_pieces)
     if (
         wQ_count == 0
         and bQ_count == 0
-        and white_minor_pieces_count == 0
-        and black_minor_pieces_count == 0
+        and white_minor_pieces_count <= 2
+        and black_minor_pieces_count <= 2
     ):
 
-        return "end game"
+        return ("end game", number_of_pieces)
     if wQ_count == 0 and bQ_count == 0 and wR_count == 0 and bR_count == 0:
         return "end game"
 
-    return "middle game"
+    return ("middle game", number_of_pieces)
 
 
 def get_board_evaluation(
@@ -83,7 +94,7 @@ def get_board_evaluation(
     b_king_pos: tuple[int, int] | None = None
 
     check: bool = False
-    game_stage = get_game_stage(board_state)
+    game_stage, number_of_pieces = get_game_stage(board_state)
 
     if possition_under_attack(board_state, king_pos, turn_to_move):
         check = True
@@ -100,7 +111,12 @@ def get_board_evaluation(
     square_index = 0
 
     if check:
+        evaluation += checkmate_index * 0.15
+
+    if last_move is not None and last_move.is_castle and game_stage == "middle game":
         evaluation += checkmate_index * 0.3
+    if last_move is not None and last_move.is_castle and game_stage == "end game":
+        evaluation += checkmate_index * 0.1
 
     for row in range(8):
         for col in range(8):
@@ -113,15 +129,39 @@ def get_board_evaluation(
                 square_index = 1
                 evaluation += square_index * piece_evaluation[
                     piece[1]
-                ] + get_piece_square_evaluation(piece, game_stage, (row, col))
+                ] + get_piece_square_evaluation(
+                    piece,
+                    (row, col),
+                    game_stage,
+                )
             elif piece[0] == "b":
                 square_index = -1
                 evaluation += square_index * piece_evaluation[
                     piece[1]
-                ] + get_piece_square_evaluation(piece, game_stage, (row, col))
-    evaluation += get_king_safty_eval(
-        board_state, "w", w_king_pos
-    ) + get_king_safty_eval(board_state, "b", b_king_pos)
+                ] + get_piece_square_evaluation(piece, (row, col), game_stage)
+    w_king_safty, w_king_mobility = get_king_safty_eval(
+        board_state, "w", w_king_pos, game_stage
+    )
+    b_king_safty, b_king_mobility = get_king_safty_eval(
+        board_state, "b", b_king_pos, game_stage
+    )
+
+    evaluation += w_king_safty + b_king_safty
+
+    king_distance = abs(w_king_pos[0] - b_king_pos[0]) + abs(
+        w_king_pos[1] - b_king_pos[1]
+    )
+
+    if evaluation > 0:
+        evaluation += 0.1 / number_of_pieces
+
+    elif evaluation < 0:
+        evaluation -= 0.1 / number_of_pieces
+
+    if evaluation >= 4 and game_stage == "end game":
+        evaluation += 2 * b_king_mobility + (0.1 / king_distance)
+    elif evaluation <= -4 and game_stage == "end game":
+        evaluation += 2 * w_king_mobility - (0.1 / king_distance)
 
     return (evaluation, game_stage, False)
 

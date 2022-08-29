@@ -2,7 +2,9 @@ from ..utils.piece_square_tables import *
 
 
 def get_piece_square_evaluation(
-    piece: str, game_stage: str, pos: tuple[int, int]
+    piece: str,
+    pos: tuple[int, int],
+    game_stage: str,
 ) -> float:
     row, col = pos
     if piece == "wP":

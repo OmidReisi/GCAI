@@ -77,3 +77,57 @@ def get_valid_moves(
         if is_valid(board_state, move, turn_to_move, king_pos):
             valid_moves.append(move)
     return valid_moves
+
+
+def get_piece_valid_moves(
+    board_state: list[list[str]],
+    turn_to_move: str,
+    selected_pos: tuple[int, int],
+    king_pos: tuple[int, int],
+    castle_rights: dict[str, bool],
+    last_move: Move | None,
+) -> list[Move]:
+    row, col = selected_pos
+    piece = board_state[row][col]
+
+    if piece[0] != turn_to_move:
+        return []
+
+    valid_moves: list[Move] = []
+
+    possible_moves = get_possible_moves(
+        board_state, selected_pos, turn_to_move, last_move, castle_rights
+    )
+
+    for move in possible_moves:
+        if is_valid(board_state, move, turn_to_move, king_pos):
+            valid_moves.append(move)
+
+    return valid_moves
+
+
+def num_of_piece_valid_moves(
+    board_state: list[list[str]],
+    selected_pos: tuple[int, int],
+    turn_to_move: str,
+    king_pos: tuple[int, int],
+    castle_rights: dict[str, bool],
+    last_move: Move | None,
+) -> int:
+    row, col = selected_pos
+    piece = board_state[row][col]
+
+    if piece[0] != turn_to_move:
+        return 0
+
+    possible_moves = get_possible_moves(
+        board_state, selected_pos, turn_to_move, last_move, castle_rights
+    )
+
+    num_of_moves = 0
+
+    for move in possible_moves:
+        if is_valid(board_state, move, turn_to_move, king_pos):
+            num_of_moves += 1
+
+    return num_of_moves

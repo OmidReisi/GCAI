@@ -1,6 +1,7 @@
 from ..move import Move
 from ..utils.piece_square_tables import piece_evaluation
-from .square_evaluation import get_piece_square_evaluation
+
+# from .square_evaluation import get_piece_square_evaluation
 
 
 def get_move_order_list(
@@ -15,29 +16,17 @@ def get_move_order_list(
 
         capture_score = 0
 
-        start_pos_score = evaluation_index * piece_evaluation[
-            move.moved_piece[1]
-        ] + get_piece_square_evaluation(move.moved_piece, game_stage, move.start_pos)
+        start_pos_score = evaluation_index * piece_evaluation[move.moved_piece[1]]
 
         if move.is_pawn_promotion:
 
-            end_pos_score = evaluation_index * piece_evaluation[
-                move.promoted_piece[1]
-            ] + get_piece_square_evaluation(
-                move.promoted_piece, game_stage, move.end_pos
-            )
+            end_pos_score = evaluation_index * piece_evaluation[move.promoted_piece[1]]
         else:
 
-            end_pos_score = evaluation_index * piece_evaluation[
-                move.moved_piece[1]
-            ] + get_piece_square_evaluation(move.moved_piece, game_stage, move.end_pos)
+            end_pos_score = evaluation_index * piece_evaluation[move.moved_piece[1]]
 
         if move.captured_piece != "__":
-            capture_score = evaluation_index * piece_evaluation[
-                move.captured_piece[1]
-            ] + get_piece_square_evaluation(
-                move.captured_piece, game_stage, move.end_pos
-            )
+            capture_score = evaluation_index * piece_evaluation[move.captured_piece[1]]
             if (
                 piece_evaluation[move.moved_piece[1]]
                 - piece_evaluation[move.captured_piece[1]]
@@ -48,6 +37,12 @@ def get_move_order_list(
         move_eval = board_eval - start_pos_score + end_pos_score + capture_score
 
         move_value_list.append((index, move_eval))
+
+        # if turn_to_move == "w" and move_eval - board_eval > -2:
+        #
+        #     move_value_list.append((index, move_eval))
+        # elif turn_to_move == "b" and move_eval - board_eval < 2:
+        #     move_value_list.append((index, move_eval))
 
     reverse_list = True if turn_to_move == "w" else False
 

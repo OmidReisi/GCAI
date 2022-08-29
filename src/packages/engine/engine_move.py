@@ -1,4 +1,5 @@
 from ..move import Move
+from ..logics import any_valid_moves
 
 
 def get_switched_turn(turn: str) -> str:
@@ -84,3 +85,40 @@ def undo_move(
         elif move.get_castle_type() == "long":
             temp_board_state[e_row][0] = f"{turn_to_move}R"
             temp_board_state[e_row][e_col + 1] = "__"
+
+
+def is_move_draw(
+    # board_state: list[list[str]],
+    # turn_to_move: str,
+    move: Move | None,
+    move_hash: int,
+    hash_list: list[int],
+    fifty_move_rule: int,
+    # opponent_king_pos: tuple[int, int],
+    # opponent_castle_rights: dict[str, bool],
+) -> bool:
+
+    if move is None:
+        return False
+
+    if hash_list.count(move_hash) >= 1:
+        return True
+
+    if not (
+        move.is_en_passant or move.captured_piece != "__" or move.moved_piece[0] == "P"
+    ):
+        if fifty_move_rule >= 99:
+            return True
+
+    # generated_board = make_move(board_state, turn_to_move, move)
+    #
+    # if not any_valid_moves(
+    #     generated_board,
+    #     get_switched_turn(turn_to_move),
+    #     opponent_king_pos,
+    #     move,
+    #     opponent_castle_rights,
+    # ):
+    #     return True
+
+    return False

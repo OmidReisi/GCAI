@@ -3,25 +3,23 @@ from ..move import Move
 
 def get_board_hash(
     board_state: list[list[str]],
-    board_hash: float,
+    board_hash: int,
     move: Move | None,
     zobrist_hash_keys: dict[str, int],
 ) -> int:
-    if move is None:
-        return
     s_row, s_col = move.start_pos
     board_hash = board_hash ^ zobrist_hash_keys[f"{move.moved_piece}_({s_row},{s_col})"]
 
     e_row, e_col = move.end_pos
-    if move.captured_piece != "__":
-        board_hash = (
-            board_hash ^ zobrist_hash_keys[f"{move.captured_piece}_({e_row},{e_col})"]
-        )
-    elif move.is_en_passant:
+    if move.is_en_passant:
         p_row, p_col = move.en_passant_pos
         piece = "wP" if move.moved_piece[0] == "b" else "bP"
         board_hash = board_hash ^ zobrist_hash_keys[f"{piece}_({p_row},{p_col})"]
         board_hash = board_hash ^ zobrist_hash_keys[f"en_passant_file_{p_col}"]
+    elif move.captured_piece != "__":
+        board_hash = (
+            board_hash ^ zobrist_hash_keys[f"{move.captured_piece}_({e_row},{e_col})"]
+        )
     elif move.is_castle:
         castle_type = move.get_castle_type()
         side = move.moved_piece[0]

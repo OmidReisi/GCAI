@@ -611,3 +611,22 @@ def get_castle(
                 )
 
     return moves
+
+
+def num_of_piece_moves(
+    board_state: list[list[str]],
+    selected_pos: tuple[int, int],
+    king_pos: tuple[int, int],
+    castle_rights: dict[str, bool],
+    last_move: Move | None,
+) -> list[Move]:
+    row, col = selected_pos
+    piece = board_state[row][col]
+
+    if piece == "__":
+        return []
+    turn_to_move = piece[0]
+
+    possible_moves = get_possible_moves(
+        board_state, selected_pos, turn_to_move, last_move, castle_rights
+    )

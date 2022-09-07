@@ -17,6 +17,24 @@ def get_move_evaluation(
     hash_table: dict[str, float],
     depth: int,
 ) -> tuple[float, int, Move]:
+    """return the move and it's minimax evaluation.
+
+    Args:
+        move (Move): move
+        board_state (list[list[str]]): board_state
+        board_hash (int): board_hash
+        turn_to_move (str): turn_to_move
+        king_pos (tuple[int, int]): king_pos
+        castle_rights (dict[str, bool]): castle_rights
+        opponent_king_pos (tuple[int, int]): opponent_king_pos
+        opponent_castle_rights (dict[str, bool]): opponent_castle_rights
+        zobrist_hash_keys (dict[str, int]): zobrist_hash_keys
+        hash_table (dict[str, float]): hash_table
+        depth (int): depth
+
+    Returns:
+        tuple[float, int, Move]:
+    """
 
     generated_board_state = make_move(board_state, turn_to_move, move)
 

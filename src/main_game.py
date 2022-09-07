@@ -11,16 +11,28 @@ from packages.board import Board
 import sys
 import pygame
 
+# initalize pygame library
 pygame.init()
 
 
 def main() -> None:
+    """main game funcion
+
+    Args:
+
+    Returns:
+        None:
+    """
     game_run: bool = True
+
+    # create a board for the game
     board: Board = Board(120, 8, 8, BROWN, BEIGE, LIGHT_GREEN, BLACK, LIGHT_GREY)
+    # define a clock for game fps
     clock: pygame.time.Clock = pygame.time.Clock()
 
     board.set_game_type()
 
+    # game's main loop
     while game_run:
 
         board.draw()
@@ -47,8 +59,10 @@ def main() -> None:
                     board.game_pause = not board.game_pause
                     board.print_help()
 
+        # maximum fps
         clock.tick(60)
 
 
+# run the main funcion if the script ir ran directly
 if __name__ == "__main__":
     main()

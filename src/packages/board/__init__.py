@@ -33,7 +33,7 @@ class Board:
         font_color: RGB_Color,
         background_color: RGB_Color,
     ) -> None:
-        """Initializing a board with the given number of rows and cols and the defined cell_size and setting the initial_state of the board.
+        """initialize a board and store it's arguments.
 
         Args:
             cell_size (int): cell_size
@@ -41,6 +41,9 @@ class Board:
             cols (int): cols
             dark_color (RGB_Color): dark_color
             light_color (RGB_Color): light_color
+            highlight_color (RGB_Color): highlight_color
+            font_color (RGB_Color): font_color
+            background_color (RGB_Color): background_color
 
         Returns:
             None:
@@ -82,6 +85,7 @@ class Board:
             r"../res/sounds/promotion.mp3"
         )
 
+        # a variable to determine if the end_game sound should be played
         self.play_game_over_sound: bool = True
 
         self.screen: pygame.surface.Surface = pygame.display.set_mode(
@@ -90,6 +94,7 @@ class Board:
 
         self.game_pause: bool = False
 
+        # string representation of each piece. first letter is the color and the second letter is the type of piece.
         self.pieces: list[str] = [
             "wP",
             "wN",
@@ -104,6 +109,8 @@ class Board:
             "bQ",
             "bK",
         ]
+
+        # initial state of a chess board. "__" represent empty squares.
         self.board_state: list[list[str]] = [
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
             ["bP", "bP", "bP", "bP", "bP", "bP", "bP", "bP"],
@@ -115,25 +122,19 @@ class Board:
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"],
         ]
 
-        # self.board_state: list[list[str]] = [
-        #     ["__", "__", "__", "__", "bK", "__", "__", "__"],
-        #     ["__", "__", "__", "__", "__", "__", "__", "__"],
-        #     ["__", "__", "__", "__", "__", "__", "__", "__"],
-        #     ["wQ", "__", "__", "__", "__", "__", "__", "__"],
-        #     ["__", "__", "__", "__", "__", "__", "__", "__"],
-        #     ["__", "__", "__", "__", "__", "__", "__", "__"],
-        #     ["__", "__", "__", "__", "__", "__", "__", "__"],
-        #     ["__", "__", "__", "__", "wK", "__", "__", "__"],
-        # ]
-
+        # a uniqe integer representing the board state for each possition.
         self.board_hash: int = 0
         self.board_hash_list: list[int] = []
 
         self.game_type: int | None = None
+
+        # type of players in the game. it can be "Human" or "AI"
         self.players: dict[str, str] | None = None
 
+        # a string representing from which side the board is shown. "w" for white and "b" for black
         self.view: str = "w"
 
+        # initial possition of kings in the board state
         self.king_possitions: dict[str, tuple[int, int]] = {"w": (7, 4), "b": (0, 4)}
 
         self.castle_rights: dict[str, dict[str, bool]] = {
@@ -148,8 +149,10 @@ class Board:
         self.draw_status: bool = False
         self.draw_status_type: str | None = None
 
+        # a string used to show which side's turn it is to move
         self.turn_to_move: Literal["w", "b"] = "w"
 
+        # used for converting board_state index to actual rank on the chess board
         self.row_to_rank: dict[int, int] = {
             0: 8,
             1: 7,
@@ -160,6 +163,8 @@ class Board:
             6: 2,
             7: 1,
         }
+
+        # used for converting board_state index to actual file on the chess board
         self.col_to_file: dict[int, str] = {
             0: "a",
             1: "b",
@@ -172,32 +177,48 @@ class Board:
         }
 
         self.move_log: list[Move] = []
+
+        # a boolean used in checking for draws or checkmates
         self.new_move: bool = True
+
         self.fifty_move_rule: int = 0
 
         self.piece_images: dict[str, pygame.surface.Surface] = {}
 
         self.load_piece_images()
 
+        # possition of selected_cell in board_state
         self.selected_cell: tuple[int, int] | None = None
+
+        # possition of selected_piece in board_state
         self.selected_piece: tuple[int, int] | None = None
 
         with open(r"./packages/utils/openings_list.json", "r") as openings_data_file:
+            # a list of known opening database
             self.openings: list[dict[str, str | list[str]]] = json.load(
                 openings_data_file
             )
 
         with open(r"./packages/utils/zobrist_hash_keys.json", "r") as zobrist_hash_file:
+            # hash keys generated to create board_hash
             self.zobrist_hash_keys: dict[str, int] = json.load(zobrist_hash_file)
 
         with open(r"./packages/utils/transposition_table.json", "r") as hash_file:
+            # database of stored board possitions
             self.transposition_table: dict[str, float] = json.load(hash_file)
 
         self.initialize_board_hash()
 
         pygame.display.set_caption("Chess Game")
 
-    def initialize_board_hash(self):
+    def initialize_board_hash(self) -> None:
+        """create the the hash for initial possition.
+
+        Args:
+
+        Returns:
+            None:
+        """
         self.board_hash = 0
 
         for row in range(8):
@@ -231,11 +252,27 @@ class Board:
             )
 
     def row_col_switch(self, row_col: int) -> int:
+        """switching given row or col number based on the view.
+
+        Args:
+            row_col (int): row_col
+
+        Returns:
+            int:
+        """
         if self.view == "w":
             return row_col
         return 7 - row_col
 
     def set_selected_cell(self, pos: tuple[int, int]) -> None:
+        """set selected_cell based on the given mouse pos.
+
+        Args:
+            pos (tuple[int, int]): pos
+
+        Returns:
+            None:
+        """
 
         selected_cell = (
             self.row_col_switch(pos[1] // self.cell_size),
@@ -246,6 +283,13 @@ class Board:
         )
 
     def set_selected_piece(self) -> None:
+        """set selected_piece based on the selected_cell and previous selected_piece.
+
+        Args:
+
+        Returns:
+            None:
+        """
 
         if self.selected_cell is not None:
             s_row, s_col = self.selected_cell
@@ -282,9 +326,23 @@ class Board:
             self.selected_piece = None
 
     def switch_turn(self) -> None:
+        """switch turn_to_move after a move is made.
+
+        Args:
+
+        Returns:
+            None:
+        """
         self.turn_to_move = "w" if self.turn_to_move == "b" else "b"
 
     def switch_view(self) -> None:
+        """switch view of the board.
+
+        Args:
+
+        Returns:
+            None:
+        """
         if self.game_pause:
             return
 
@@ -292,6 +350,13 @@ class Board:
         self.selected_cell = None
 
     def set_checkmate_stalemate(self) -> None:
+        """check if game is over after a move is made.
+
+        Args:
+
+        Returns:
+            None:
+        """
         if not self.new_move:
             return
         self.new_move = False
@@ -311,6 +376,13 @@ class Board:
             self.stalemate = True
 
     def set_draw(self) -> None:
+        """check if the game is drawn based on the possition.
+
+        Args:
+
+        Returns:
+            None:
+        """
         white_materials: list[tuple[str, int]] = []
         black_materials: list[str] = []
         colored_bishops: int | None = None
@@ -368,6 +440,14 @@ class Board:
         self.draw_status_type = "Insufficient Materials"
 
     def set_row_col_move_notation(self, move: Move) -> str:
+        """return move notaition modification based on the move.
+
+        Args:
+            move (Move): move
+
+        Returns:
+            str:
+        """
 
         row_col_notation: str = ""
         move_list: list[Move] = []
@@ -418,11 +498,26 @@ class Board:
         return row_col_notation
 
     def get_last_move(self) -> Move | None:
+        """get last_move if available.
+
+        Args:
+
+        Returns:
+            Move | None:
+        """
         if len(self.move_log) == 0:
             return None
         return self.move_log[-1]
 
     def make_move(self, move: Move | None) -> None:
+        """make the given move.
+
+        Args:
+            move (Move | None): move
+
+        Returns:
+            None:
+        """
         if move is None:
             return
 
@@ -541,6 +636,13 @@ class Board:
             self.selected_piece = None
 
     def undo_move(self) -> None:
+        """undo last move.
+
+        Args:
+
+        Returns:
+            None:
+        """
         if self.game_pause:
             return
 
@@ -593,10 +695,27 @@ class Board:
             self.play_game_over_sound = True
 
     def get_file_rank(self, pos: tuple[int, int]) -> str:
+        """get file_rank notation based on the given pos.
+
+        Args:
+            pos (tuple[int, int]): pos
+
+        Returns:
+            str:
+        """
 
         return f"{self.col_to_file[pos[1]]}{self.row_to_rank[pos[0]]}"
 
     def move_sound(self, move: Move, check: bool) -> None:
+        """play the move sound.
+
+        Args:
+            move (Move): move
+            check (bool): check
+
+        Returns:
+            None:
+        """
         sound_effect: pygame.mixer.Sound | None = None
 
         if check:
@@ -612,11 +731,26 @@ class Board:
 
         sound_effect.play()
 
-    def update_transposition_table_file(self):
+    def update_transposition_table_file(self) -> None:
+        """update transposition_table file after an engine move.
+
+        Args:
+
+        Returns:
+            None:
+        """
         with open(r"./packages/utils/transposition_table.json", "w") as hash_file:
             json.dump(self.transposition_table, hash_file, indent=2)
 
-    def update_board_hash(self, move: Move | None):
+    def update_board_hash(self, move: Move | None) -> None:
+        """update board_hash after a move.
+
+        Args:
+            move (Move | None): move
+
+        Returns:
+            None:
+        """
         if move is None:
             return
         s_row, s_col = move.start_pos
@@ -706,9 +840,24 @@ class Board:
         self.board_hash_list.append(self.board_hash)
 
     def update_move_log(self, move: Move) -> None:
+        """add given move to the move log.
+
+        Args:
+            move (Move): move
+
+        Returns:
+            None:
+        """
         self.move_log.append(move)
 
     def update_openings(self) -> None:
+        """remove openings from the openings list if they don't match the move log.
+
+        Args:
+
+        Returns:
+            None:
+        """
         index = len(self.move_log) - 1
         if index < 0:
             return
@@ -723,6 +872,13 @@ class Board:
         self.openings = [opening.copy() for opening in remaining_openings]
 
     def get_move_depth(self) -> int:
+        """get depth of calculation for engine move based on the possition.
+
+        Args:
+
+        Returns:
+            int:
+        """
         number_of_pieces = 0
         for row in range(8):
             for col in range(8):
@@ -732,7 +888,14 @@ class Board:
             return 4
         return 3
 
-    def update_board_state(self):
+    def update_board_state(self) -> None:
+        """update board and game status.
+
+        Args:
+
+        Returns:
+            None:
+        """
         if self.game_pause:
             return
         self.set_selected_piece()
@@ -776,6 +939,7 @@ class Board:
                 self.fifty_move_rule,
                 3,
             )
+            # a short delay between engine moves
             pygame.time.delay(200)
 
             self.update_transposition_table_file()
@@ -856,6 +1020,13 @@ class Board:
                     )
 
     def highlight_cell(self) -> None:
+        """highlight selected cell with the highlight_color on the board.
+
+        Args:
+
+        Returns:
+            None:
+        """
 
         if self.selected_cell is not None:
 
@@ -876,6 +1047,13 @@ class Board:
                 self.screen.blit(cell_surface, cell_rect)
 
     def highlight_last_move(self) -> None:
+        """highlight last_move on the board.
+
+        Args:
+
+        Returns:
+            None:
+        """
         if self.move_log:
             for cell in [self.move_log[-1].start_pos, self.move_log[-1].end_pos]:
                 cell_rect: pygame.Rect = pygame.Rect(
@@ -890,6 +1068,13 @@ class Board:
                 self.screen.blit(cell_surface, cell_rect)
 
     def highlight_valid_moves(self) -> None:
+        """highlight valid moves for selected piece.
+
+        Args:
+
+        Returns:
+            None:
+        """
         if self.selected_piece is None:
             return
 
@@ -925,6 +1110,13 @@ class Board:
                 self.screen.blit(cell_surface, cell_rect)
 
     def pawn_promotion(self) -> str:
+        """choose the promotion piece when the player is Human.
+
+        Args:
+
+        Returns:
+            str:
+        """
         pieces = (
             ["wN", "wB", "wR", "wQ"]
             if self.turn_to_move == "w"
@@ -966,6 +1158,13 @@ class Board:
         return piece
 
     def print_help(self) -> None:
+        """show help menu on the screen.
+
+        Args:
+
+        Returns:
+            None:
+        """
 
         if not self.game_pause:
             return
@@ -1018,6 +1217,13 @@ class Board:
         self.screen.blit(notation_surface, notation_rect)
 
     def draw_game_results(self) -> None:
+        """draw game_results on the screen if the game is over.
+
+        Args:
+
+        Returns:
+            None:
+        """
         if self.checkmate:
             winner = "White" if self.checks["b"] else "Black"
             checkmate_surface_1 = self.text_font.render(
@@ -1068,7 +1274,7 @@ class Board:
             return
 
     def draw(self) -> None:
-        """calling the draw_board(), highlight_cell(), highlight_last_move(), draw_pieces() respectively.
+        """call all the draw methods.
 
         Args:
 
@@ -1083,12 +1289,16 @@ class Board:
             self.draw_pieces()
             self.draw_game_results()
 
-        # else:
-        #     self.print_help()
-
         pygame.display.update()
 
-    def print_move_notations(self):
+    def print_move_notations(self) -> None:
+        """show notation log on the screen.
+
+        Args:
+
+        Returns:
+            None:
+        """
 
         if not self.game_pause:
             return
@@ -1100,13 +1310,11 @@ class Board:
         move_count: int = 1
         for i in range(1, len(self.move_log), 2):
             move_list.append(
-                f"{move_count}. {self.move_log[i-1].get_symbols_notation()} {self.move_log[i].get_symbols_notation()}  "
+                f"{move_count}. {self.move_log[i-1].notation} {self.move_log[i].notation}  "
             )
             move_count += 1
         if len(self.move_log) % 2 != 0:
-            move_list.append(
-                f"{move_count}. {self.move_log[-1].get_symbols_notation()}  "
-            )
+            move_list.append(f"{move_count}. {self.move_log[-1].notation}  ")
 
         self.screen.fill(self.background_color)
         opening_font: pygame.font.Font = pygame.font.Font(
@@ -1126,7 +1334,9 @@ class Board:
         start_line_x = initial_start_line_x
         start_line_y = initial_start_line_y
 
-        notation_font: pygame.font.Font = pygame.font.SysFont("times", 40)
+        notation_font: pygame.font.Font = pygame.font.Font(
+            r"../res/fonts/Times.TTF", 40
+        )
 
         pressed_key: int | None = None
 
@@ -1178,7 +1388,14 @@ class Board:
 
             pressed_key = None
 
-    def set_game_type(self):
+    def set_game_type(self) -> None:
+        """set players type for each side.
+
+        Args:
+
+        Returns:
+            None:
+        """
 
         title_1_surface = self.text_font.render("Welcome to GCAI", True, (0, 0, 0))
         title_1_rect = title_1_surface.get_rect(
@@ -1292,7 +1509,14 @@ class Board:
                 self.set_players()
                 self.game_start_sound.play()
 
-    def set_players(self):
+    def set_players(self) -> None:
+        """set the color for player if game type is Player vs. Engine.
+
+        Args:
+
+        Returns:
+            None:
+        """
 
         title_surface = self.text_font.render("Choose a Color", True, (0, 0, 0))
         title_rect = title_surface.get_rect(
@@ -1393,6 +1617,13 @@ class Board:
                 return
 
     def reset_board(self) -> None:
+        """reset the game.
+
+        Args:
+
+        Returns:
+            None:
+        """
         if self.game_pause:
             return
 

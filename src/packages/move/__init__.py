@@ -45,20 +45,20 @@ file_to_col: dict[str, int] = {
 }
 
 
-symbols_notation: dict[str, str] = {
-    "wK": "♔",
-    "wQ": "♕",
-    "wR": "♖",
-    "wB": "♗",
-    "wN": "♘",
-    "wP": "♙",
-    "bK": "♚",
-    "bQ": "♛",
-    "bR": "♜",
-    "bB": "♝",
-    "bN": "♞",
-    "bP": "♟",
-}
+# symbols_notation: dict[str, str] = {
+#     "wK": "♔",
+#     "wQ": "♕",
+#     "wR": "♖",
+#     "wB": "♗",
+#     "wN": "♘",
+#     "wP": "♙",
+#     "bK": "♚",
+#     "bQ": "♛",
+#     "bR": "♜",
+#     "bB": "♝",
+#     "bN": "♞",
+#     "bP": "♟",
+# }
 
 
 class Move:
@@ -69,18 +69,32 @@ class Move:
         board_state: list[list[str]],
         turn_to_move: str,
     ) -> None:
+        """initialize a move object with it's given argument.
+
+        Args:
+            start_pos (tuple[int, int] | None): start_pos
+            end_pos (tuple[int, int] | None): end_pos
+            board_state (list[list[str]]): board_state
+            turn_to_move (str): turn_to_move
+
+        Returns:
+            None:
+        """
         self.start_pos: tuple[int, int] | None = start_pos
         self.end_pos: tuple[int, int] | None = end_pos
+
+        # color of the piece that makes the move
         self.turn_to_move: str = turn_to_move
 
         self.is_pawn_promotion: bool = False
 
+        # promoted piece type if the move is promotion
         self.promoted_piece: str | None = None
 
-        self.castle_rights: dict[str, dict[str, bool]] = {
-            "w": {"short": True, "long": True},
-            "b": {"short": True, "long": True},
-        }
+        # self.castle_rights: dict[str, dict[str, bool]] = {
+        #     "w": {"short": True, "long": True},
+        #     "b": {"short": True, "long": True},
+        # }
 
         if self.start_pos is not None:
             self.moved_piece: str = board_state[self.start_pos[0]][self.start_pos[1]]
@@ -103,15 +117,32 @@ class Move:
         self.opening_name: str | None = None
 
         self.row_col_notation: str = ""
+
+        # chess notation of the move
         self.notation: str = self.get_notation()
 
         self.fifty_move_rule: int | None = None
 
     def set_promoted_piece(self, piece: str) -> None:
+        """set promotion piece.
+
+        Args:
+            piece (str): piece
+
+        Returns:
+            None:
+        """
         if self.is_pawn_promotion:
             self.promoted_piece = piece
 
     def is_two_square_pawn_move(self) -> bool:
+        """check if the move is a pawn the moves two squares. used for recognizing if en_passant is available.
+
+        Args:
+
+        Returns:
+            bool:
+        """
         if self.start_pos is not None and self.end_pos is not None:
             if (
                 abs(self.start_pos[0] - self.end_pos[0]) == 2
@@ -122,6 +153,13 @@ class Move:
 
     @property
     def is_en_passant(self) -> bool:
+        """check to see if the move is en_passant.
+
+        Args:
+
+        Returns:
+            bool:
+        """
         if self.start_pos is None or self.end_pos is None:
             return False
         if (
@@ -136,12 +174,26 @@ class Move:
 
     @property
     def en_passant_pos(self) -> tuple[int, int] | None:
+        """return the possition of opponent's pawn if the move is en_passant.
+
+        Args:
+
+        Returns:
+            tuple[int, int] | None:
+        """
         if self.is_en_passant:
             return (self.start_pos[0], self.end_pos[1])
         return None
 
     @property
     def is_castle(self) -> bool:
+        """check to see if the move is Castling.
+
+        Args:
+
+        Returns:
+            bool:
+        """
         if self.start_pos is None or self.end_pos is None:
             return False
         if self.moved_piece[1] == "K" and self.start_pos[0] == self.end_pos[0]:
@@ -150,6 +202,13 @@ class Move:
         return False
 
     def get_castle_type(self) -> str | None:
+        """get the type of Castling if the move is Castling.
+
+        Args:
+
+        Returns:
+            str | None:
+        """
 
         if self.is_castle:
             if self.start_pos[1] < self.end_pos[1]:
@@ -158,6 +217,13 @@ class Move:
         return None
 
     def update_end_pos(self) -> None:
+        """update the end possition of the move. used in Castling.
+
+        Args:
+
+        Returns:
+            None:
+        """
         if self.is_castle:
             p_row, p_col = self.start_pos
             if self.get_castle_type() == "short":
@@ -167,6 +233,13 @@ class Move:
             self.captured_piece = "__"
 
     def get_notation(self) -> str | None:
+        """return the initial notaion of the move.
+
+        Args:
+
+        Returns:
+            str | None:
+        """
         if self.start_pos is None or self.end_pos is None:
             return None
         if self.is_castle:
@@ -197,17 +270,33 @@ class Move:
         )
 
     def update_notation(self, notation_part: str) -> None:
+        """update the notaion based on the given notation_part.
+
+        Args:
+            notation_part (str): notation_part
+
+        Returns:
+            None:
+        """
         self.notation = self.get_notation() + notation_part
 
-    def get_symbols_notation(self):
-        if self.notation[0] in ["K", "Q", "R", "B", "N"]:
-            return (
-                symbols_notation[self.turn_to_move + self.notation[0]]
-                + self.notation[1:]
-            )
-        return self.notation
+    # def get_symbols_notation(self):
+    #     if self.notation[0] in ["K", "Q", "R", "B", "N"]:
+    #         return (
+    #             symbols_notation[self.turn_to_move + self.notation[0]]
+    #             + self.notation[1:]
+    #         )
+    #     return self.notation
 
     def set_fifty_move_rule(self, previous_fifty_move_rule: int) -> None:
+        """set the move number in fifty_move_rule based on the previous_fifty_move_rule.
+
+        Args:
+            previous_fifty_move_rule (int): previous_fifty_move_rule
+
+        Returns:
+            None:
+        """
         if self.start_pos is None or self.end_pos is None:
             return
         if self.moved_piece[1] == "P" or self.captured_piece != "__":
@@ -217,6 +306,14 @@ class Move:
             self.fifty_move_rule = previous_fifty_move_rule + 1
 
     def __eq__(self, other: Move) -> bool:
+        """check to see if two moves are equal.
+
+        Args:
+            other (Move): other
+
+        Returns:
+            bool:
+        """
         if (
             (self.start_pos == other.start_pos)
             and (self.end_pos == other.end_pos)
@@ -229,6 +326,14 @@ class Move:
         return False
 
     def __ne__(self, other: Move) -> bool:
+        """check to see if two moves are not equal.
+
+        Args:
+            other (Move): other
+
+        Returns:
+            bool:
+        """
         return not self == other
 
     @staticmethod
@@ -301,6 +406,19 @@ class Move:
         castle_rights: dict[str, bool],
         king_pos: tuple[int, int],
     ) -> Move | None:
+        """return the move based on the given notaion.
+
+        Args:
+            notation (str): notation
+            board_state (list[list[str]]): board_state
+            turn_to_move (str): turn_to_move
+            last_move (Move | None): last_move
+            castle_rights (dict[str, bool]): castle_rights
+            king_pos (tuple[int, int]): king_pos
+
+        Returns:
+            Move | None:
+        """
 
         from ..logics import get_possible_moves
 

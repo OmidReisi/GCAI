@@ -7,6 +7,17 @@ def get_king_safty_eval(
     king_pos: tuple[int, int] | None,
     game_stage: str,
 ) -> tuple[float, float]:
+    """get relative king_safty based on it's possition.
+
+    Args:
+        board_state (list[list[str]]): board_state
+        king_side (str): king_side
+        king_pos (tuple[int, int] | None): king_pos
+        game_stage (str): game_stage
+
+    Returns:
+        tuple[float, float]:
+    """
 
     king_mobility: float = 0
 

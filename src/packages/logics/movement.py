@@ -10,6 +10,19 @@ def get_possible_moves(
     castle_rights: dict[str, bool],
     given_piece: str | None = None,
 ) -> list[Move]:
+    """get all the possible move regardless of if they're valid or not based on turn_to_move.
+
+    Args:
+        board_state (list[list[str]]): board_state
+        selected_pos (tuple[int, int]): selected_pos
+        turn_to_move (str): turn_to_move
+        last_move (Move | None): last_move
+        castle_rights (dict[str, bool]): castle_rights
+        given_piece (str | None): given_piece
+
+    Returns:
+        list[Move]:
+    """
 
     row, col = selected_pos
 
@@ -145,6 +158,17 @@ def get_en_passant(
     turn_to_move: str,
     last_move: Move | None,
 ) -> Move | None:
+    """return en_passant move if it's possible.
+
+    Args:
+        board_state (list[list[str]]): board_state
+        selected_pos (tuple[int, int]): selected_pos
+        turn_to_move (str): turn_to_move
+        last_move (Move | None): last_move
+
+    Returns:
+        Move | None:
+    """
     if last_move is None:
         return None
 
@@ -180,6 +204,16 @@ def get_en_passant(
 def get_knight_moves(
     board_state: list[list[str]], selected_pos: tuple[int, int], turn_to_move: str
 ) -> list[Move]:
+    """get all available knight moves.
+
+    Args:
+        board_state (list[list[str]]): board_state
+        selected_pos (tuple[int, int]): selected_pos
+        turn_to_move (str): turn_to_move
+
+    Returns:
+        list[Move]:
+    """
     moves: list[Move] = []
     p_row, p_col = selected_pos
     possitions_to_check = [
@@ -204,6 +238,16 @@ def get_knight_moves(
 def get_bishop_moves(
     board_state: list[list[str]], selected_pos: tuple[int, int], turn_to_move: str
 ) -> list[Move]:
+    """get all available bishop moves.
+
+    Args:
+        board_state (list[list[str]]): board_state
+        selected_pos (tuple[int, int]): selected_pos
+        turn_to_move (str): turn_to_move
+
+    Returns:
+        list[Move]:
+    """
     moves: list[Move] = []
     directions = {
         "upleft": True,
@@ -287,6 +331,16 @@ def get_bishop_moves(
 def get_rook_moves(
     board_state: list[list[str]], selected_pos: tuple[int, int], turn_to_move: str
 ) -> list[Move]:
+    """get all available rook moves.
+
+    Args:
+        board_state (list[list[str]]): board_state
+        selected_pos (tuple[int, int]): selected_pos
+        turn_to_move (str): turn_to_move
+
+    Returns:
+        list[Move]:
+    """
     moves: list[Move] = []
 
     directions = {
@@ -369,6 +423,16 @@ def get_rook_moves(
 def get_queen_moves(
     board_state: list[list[str]], selected_pos: tuple[int, int], turn_to_move: str
 ) -> list[Move]:
+    """get all available queen moves.
+
+    Args:
+        board_state (list[list[str]]): board_state
+        selected_pos (tuple[int, int]): selected_pos
+        turn_to_move (str): turn_to_move
+
+    Returns:
+        list[Move]:
+    """
     moves: list[Move] = []
     directions = {
         "up": True,
@@ -523,6 +587,16 @@ def get_queen_moves(
 def get_king_moves(
     board_state: list[list[str]], selected_pos: tuple[int, int], turn_to_move: str
 ) -> list[Move]:
+    """get all available king moves.
+
+    Args:
+        board_state (list[list[str]]): board_state
+        selected_pos (tuple[int, int]): selected_pos
+        turn_to_move (str): turn_to_move
+
+    Returns:
+        list[Move]:
+    """
     moves: list[Move] = []
     p_row, p_col = selected_pos
     possitions_to_check = [
@@ -550,6 +624,17 @@ def get_castle(
     turn_to_move: str,
     castle_rights: dict[str, bool],
 ) -> list[Move]:
+    """get Castling moves if available.
+
+    Args:
+        board_state (list[list[str]]): board_state
+        selected_pos (tuple[int, int]): selected_pos
+        turn_to_move (str): turn_to_move
+        castle_rights (dict[str, bool]): castle_rights
+
+    Returns:
+        list[Move]:
+    """
 
     moves: list[Move] = []
 
@@ -613,20 +698,20 @@ def get_castle(
     return moves
 
 
-def num_of_piece_moves(
-    board_state: list[list[str]],
-    selected_pos: tuple[int, int],
-    king_pos: tuple[int, int],
-    castle_rights: dict[str, bool],
-    last_move: Move | None,
-) -> list[Move]:
-    row, col = selected_pos
-    piece = board_state[row][col]
-
-    if piece == "__":
-        return []
-    turn_to_move = piece[0]
-
-    possible_moves = get_possible_moves(
-        board_state, selected_pos, turn_to_move, last_move, castle_rights
-    )
+# def num_of_piece_moves(
+#     board_state: list[list[str]],
+#     selected_pos: tuple[int, int],
+#     king_pos: tuple[int, int],
+#     castle_rights: dict[str, bool],
+#     last_move: Move | None,
+# ) -> list[Move]:
+#     row, col = selected_pos
+#     piece = board_state[row][col]
+#
+#     if piece == "__":
+#         return []
+#     turn_to_move = piece[0]
+#
+#     possible_moves = get_possible_moves(
+#         board_state, selected_pos, turn_to_move, last_move, castle_rights
+#     )

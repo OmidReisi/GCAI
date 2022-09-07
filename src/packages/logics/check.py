@@ -1,6 +1,16 @@
 def possition_under_attack(
     board_state: list[list[str]], possition: tuple[int, int], turn_to_move: str
 ) -> bool:
+    """check to see if the given possition is under attack from opponent's pieces.
+
+    Args:
+        board_state (list[list[str]]): board_state
+        possition (tuple[int, int]): possition
+        turn_to_move (str): turn_to_move
+
+    Returns:
+        bool:
+    """
     row, col = possition
 
     opponent_color = "w" if turn_to_move == "b" else "b"

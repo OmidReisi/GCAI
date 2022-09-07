@@ -8,6 +8,14 @@ from ..utils.piece_square_tables import piece_evaluation
 
 
 def get_game_stage(board_state: list[list[str]]) -> tuple[str, int]:
+    """return game stage based on the possition.
+
+    Args:
+        board_state (list[list[str]]): board_state
+
+    Returns:
+        tuple[str, int]:
+    """
     wQ_count = 0
     bQ_count = 0
     wR_count = 0
@@ -88,6 +96,18 @@ def get_board_evaluation(
     castle_rights: dict[str, bool],
     last_move: Move | None,
 ) -> tuple[float, str, bool]:
+    """get the static board evaluation.
+
+    Args:
+        board_state (list[list[str]]): board_state
+        turn_to_move (str): turn_to_move
+        king_pos (tuple[int, int]): king_pos
+        castle_rights (dict[str, bool]): castle_rights
+        last_move (Move | None): last_move
+
+    Returns:
+        tuple[float, str, bool]:
+    """
 
     checkmate_index = -1 if turn_to_move == "w" else 1
     w_king_pos: tuple[int, int] | None = None
@@ -178,6 +198,23 @@ def get_minimax_evaluation(
     beta: float,
     depth: float,
 ) -> float:
+    """get the dynamic board evaluation based on the minimax algorithem.
+
+    Args:
+        board_state (list[list[str]]): board_state
+        turn_to_move (str): turn_to_move
+        king_pos (tuple[int, int]): king_pos
+        castle_rights (dict[str, bool]): castle_rights
+        opponent_king_pos (tuple[int, int]): opponent_king_pos
+        opponent_castle_rights (dict[str, bool]): opponent_castle_rights
+        last_move (Move | None): last_move
+        alpha (float): alpha
+        beta (float): beta
+        depth (float): depth
+
+    Returns:
+        float:
+    """
 
     current_board_eval = get_board_evaluation(
         board_state,

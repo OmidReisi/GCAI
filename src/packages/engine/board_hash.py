@@ -7,6 +7,17 @@ def get_board_hash(
     move: Move | None,
     zobrist_hash_keys: dict[str, int],
 ) -> int:
+    """get the board hash based on possition to store in transposition_table.
+
+    Args:
+        board_state (list[list[str]]): board_state
+        board_hash (int): board_hash
+        move (Move | None): move
+        zobrist_hash_keys (dict[str, int]): zobrist_hash_keys
+
+    Returns:
+        int:
+    """
     s_row, s_col = move.start_pos
     board_hash = board_hash ^ zobrist_hash_keys[f"{move.moved_piece}_({s_row},{s_col})"]
 

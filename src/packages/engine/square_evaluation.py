@@ -6,6 +6,16 @@ def get_piece_square_evaluation(
     pos: tuple[int, int],
     game_stage: str,
 ) -> float:
+    """get the value of the piece based on it's possition on the board.
+
+    Args:
+        piece (str): piece
+        pos (tuple[int, int]): pos
+        game_stage (str): game_stage
+
+    Returns:
+        float:
+    """
     row, col = pos
     if piece == "wP":
         return wP_table[row][col]

@@ -7,6 +7,17 @@ from ..utils.piece_square_tables import piece_evaluation
 def get_move_order_list(
     move_list: list[Move], turn_to_move: str, game_stage: str, board_eval: float
 ) -> list[Move]:
+    """reorder the moves to optimize the minimax algorithem.
+
+    Args:
+        move_list (list[Move]): move_list
+        turn_to_move (str): turn_to_move
+        game_stage (str): game_stage
+        board_eval (float): board_eval
+
+    Returns:
+        list[Move]:
+    """
     evaluation_index = 1 if turn_to_move == "w" else -1
     move_value_list: list[tuple[int, float]] = []
 

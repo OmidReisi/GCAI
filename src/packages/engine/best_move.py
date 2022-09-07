@@ -27,8 +27,29 @@ def get_best_move(
     fifty_move_rule: int,
     depth: int,
 ) -> Move | None:
+    """finding and returning the best move based on the possition.
 
-    start_time = time.perf_counter()
+    Args:
+        valid_moves (list[Move]): valid_moves
+        board_state (list[list[str]]): board_state
+        board_hash (int): board_hash
+        turn_to_move (str): turn_to_move
+        king_pos (tuple[int, int]): king_pos
+        castle_rights (dict[str, bool]): castle_rights
+        opponent_king_pos (tuple[int, int]): opponent_king_pos
+        opponent_castle_rights (dict[str, bool]): opponent_castle_rights
+        openings (list[dict[str, str | list[str]]]): openings
+        opening_index (int): opening_index
+        last_move (Move | None): last_move
+        zobrist_hash_keys (dict[str, int]): zobrist_hash_keys
+        hash_table (dict[str, float]): hash_table
+        hash_list (list[int]): hash_list
+        fifty_move_rule (int): fifty_move_rule
+        depth (int): depth
+
+    Returns:
+        Move | None:
+    """
 
     best_moves: list[Move] = []
     secondary_moves: list[Move] = []
@@ -55,9 +76,6 @@ def get_best_move(
 
         if len(move_list) > 0:
             return get_random_move(move_list)
-
-    # if len(valid_moves) <= 30:
-    #     depth += 1
 
     with ProcessPoolExecutor() as executer:
         eval_results = [
@@ -102,7 +120,6 @@ def get_best_move(
                     # opponent_king_pos,
                     # opponent_castle_rights,
                 ):
-                    print("added")
                     secondary_moves.append(move)
                     continue
                 best_moves = [move]
@@ -118,7 +135,6 @@ def get_best_move(
                     # opponent_king_pos,
                     # opponent_castle_rights,
                 ):
-                    print("added")
                     secondary_moves.append(move)
                     continue
                 best_moves = [move]

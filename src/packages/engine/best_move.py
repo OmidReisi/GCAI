@@ -6,7 +6,7 @@ from ..move import Move
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import pygame
 import sys
-import time
+import json
 
 
 def get_best_move(
@@ -104,10 +104,14 @@ def get_best_move(
                 sys.exit()
             if event.type == pygame.KEYDOWN:
                 return None
+
             move_eval, move_hash, move = result.result()
             move_hash = int(move_hash)
+
             if move_hash not in hash_table:
                 hash_table[move_hash] = move_eval
+            else:
+                update_hashed_moves_count()
 
             if turn_to_move == "b" and move_eval < min_max_eval:
                 if is_move_draw(
@@ -218,3 +222,20 @@ def get_best_move(
         return get_random_move(secondary_moves)
 
     return get_random_move(best_moves)
+
+
+def update_hashed_moves_count() -> None:
+    """increase the number of hashed moves counter by 1
+
+    Args:
+
+    Returns:
+        None:
+    """
+
+    with open(r"./packages/utils/hashed_moves_counter.json", "r") as json_file:
+        counter = json.load(json_file)
+        counter["count"] += 1
+
+    with open(r"./packages/utils/hashed_moves_counter.json", "w") as json_file:
+        json.dump(counter, json_file, indent=2)
